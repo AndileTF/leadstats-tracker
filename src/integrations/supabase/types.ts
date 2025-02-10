@@ -11,6 +11,9 @@ export type Database = {
     Tables: {
       daily_stats: {
         Row: {
+          abandon_rate: number
+          average_handling_time: unknown
+          average_wait_time: unknown
           calls: number | null
           created_at: string
           date: string
@@ -19,9 +22,13 @@ export type Database = {
           id: string
           live_chat: number | null
           qa_assessments: number | null
+          sla_percentage: number
           team_lead_id: string
         }
         Insert: {
+          abandon_rate?: number
+          average_handling_time?: unknown
+          average_wait_time?: unknown
           calls?: number | null
           created_at?: string
           date?: string
@@ -30,9 +37,13 @@ export type Database = {
           id?: string
           live_chat?: number | null
           qa_assessments?: number | null
+          sla_percentage?: number
           team_lead_id: string
         }
         Update: {
+          abandon_rate?: number
+          average_handling_time?: unknown
+          average_wait_time?: unknown
           calls?: number | null
           created_at?: string
           date?: string
@@ -41,6 +52,7 @@ export type Database = {
           id?: string
           live_chat?: number | null
           qa_assessments?: number | null
+          sla_percentage?: number
           team_lead_id?: string
         }
         Relationships: [
@@ -73,7 +85,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      team_lead_overview: {
+        Row: {
+          average_abandon_rate: number | null
+          average_sla: number | null
+          avg_handling_time_minutes: number | null
+          avg_wait_time_minutes: number | null
+          name: string | null
+          total_calls: number | null
+          total_days: number | null
+          total_emails: number | null
+          total_escalations: number | null
+          total_live_chat: number | null
+          total_qa_assessments: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_weekly_stats: {
