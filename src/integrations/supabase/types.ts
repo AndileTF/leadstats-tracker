@@ -9,13 +9,86 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      daily_stats: {
+        Row: {
+          calls: number | null
+          created_at: string
+          date: string
+          emails: number | null
+          escalations: number | null
+          id: string
+          live_chat: number | null
+          qa_assessments: number | null
+          team_lead_id: string
+        }
+        Insert: {
+          calls?: number | null
+          created_at?: string
+          date?: string
+          emails?: number | null
+          escalations?: number | null
+          id?: string
+          live_chat?: number | null
+          qa_assessments?: number | null
+          team_lead_id: string
+        }
+        Update: {
+          calls?: number | null
+          created_at?: string
+          date?: string
+          emails?: number | null
+          escalations?: number | null
+          id?: string
+          live_chat?: number | null
+          qa_assessments?: number | null
+          team_lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_leads: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_weekly_stats: {
+        Args: {
+          start_date: string
+        }
+        Returns: {
+          team_lead_id: string
+          total_calls: number
+          total_emails: number
+          total_live_chat: number
+          total_escalations: number
+          total_qa_assessments: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
