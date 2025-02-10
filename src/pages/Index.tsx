@@ -222,13 +222,13 @@ const Index = () => {
                 {overview.map((item) => (
                   <tr key={item.name}>
                     <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_calls}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_emails}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_live_chat}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.avg_handling_time_minutes.toFixed(1)} min</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.avg_wait_time_minutes.toFixed(1)} min</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.average_abandon_rate.toFixed(1)}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.average_sla.toFixed(1)}%</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.total_calls?.toLocaleString() ?? 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.total_emails?.toLocaleString() ?? 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.total_live_chat?.toLocaleString() ?? 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.avg_handling_time_minutes?.toFixed(1) ?? 0} min</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.avg_wait_time_minutes?.toFixed(1) ?? 0} min</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.average_abandon_rate?.toFixed(1) ?? 0}%</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.average_sla?.toFixed(1) ?? 0}%</td>
                   </tr>
                 ))}
               </tbody>
