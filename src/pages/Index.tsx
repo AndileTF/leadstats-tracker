@@ -1,25 +1,19 @@
 
 import { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatForm } from "@/components/StatForm";
 import { toast } from "@/hooks/use-toast";
-import { 
-  ArrowUpRight, BarChart3, Calendar, Mail, MessageSquare, 
-  Phone, Shield, Clock, Timer, AlertCircle, CheckCircle2 
-} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { TeamLead, DailyStats, DateFilter } from "@/types/teamLead";
-import { format, startOfWeek, startOfMonth, subDays, parseISO } from 'date-fns';
+import { TeamLead, DailyStats, DateFilter as DateFilterType } from "@/types/teamLead";
+import { format, startOfWeek, startOfMonth, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { DateFilter } from "@/components/dashboard/DateFilter";
+import { TeamLeadTabs } from "@/components/dashboard/TeamLeadTabs";
 
 const Index = () => {
   const [showForm, setShowForm] = useState(false);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('day');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('day');
   const [stats, setStats] = useState<DailyStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [customDate, setCustomDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -85,7 +79,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Convert interval to string before setting state
       const formattedData = (data || []).map(stat => ({
         ...stat,
         average_handling_time: String(stat.average_handling_time),
@@ -102,33 +95,6 @@ const Index = () => {
     }
   };
 
-  const calculateTotalStats = () => {
-    return stats.reduce((acc, curr) => ({
-      calls: acc.calls + (curr.calls || 0),
-      emails: acc.emails + (curr.emails || 0),
-      live_chat: acc.live_chat + (curr.live_chat || 0),
-      escalations: acc.escalations + (curr.escalations || 0),
-      qa_assessments: acc.qa_assessments + (curr.qa_assessments || 0),
-      average_handling_time: acc.average_handling_time + parseFloat(curr.average_handling_time) || 0,
-      average_wait_time: acc.average_wait_time + parseFloat(curr.average_wait_time) || 0,
-      abandon_rate: acc.abandon_rate + (curr.abandon_rate || 0),
-      sla_percentage: acc.sla_percentage + (curr.sla_percentage || 0),
-    }), {
-      calls: 0,
-      emails: 0,
-      live_chat: 0,
-      escalations: 0,
-      qa_assessments: 0,
-      average_handling_time: 0,
-      average_wait_time: 0,
-      abandon_rate: 0,
-      sla_percentage: 0,
-    });
-  };
-
-  const totalStats = calculateTotalStats();
-  const statsCount = stats.length || 1;
-
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -144,44 +110,12 @@ const Index = () => {
             <p className="text-muted-foreground mt-2">Track and analyze your team's performance metrics</p>
           </div>
           <div className="flex gap-4">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setDateFilter('day')}
-                className={dateFilter === 'day' ? 'bg-primary/20' : ''}
-              >
-                Day
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setDateFilter('week')}
-                className={dateFilter === 'week' ? 'bg-primary/20' : ''}
-              >
-                Week
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setDateFilter('month')}
-                className={dateFilter === 'month' ? 'bg-primary/20' : ''}
-              >
-                Month
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setDateFilter('custom')}
-                  className={dateFilter === 'custom' ? 'bg-primary/20' : ''}
-                >
-                  Custom
-                </Button>
-                <Input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => setCustomDate(e.target.value)}
-                  className="w-40"
-                />
-              </div>
-            </div>
+            <DateFilter
+              dateFilter={dateFilter}
+              setDateFilter={setDateFilter}
+              customDate={customDate}
+              setCustomDate={setCustomDate}
+            />
             <Button 
               onClick={() => setShowForm(!showForm)}
               className="bg-primary/20 hover:bg-primary/30 text-primary"
@@ -198,107 +132,17 @@ const Index = () => {
           </div>
         </div>
 
-        <Tabs defaultValue={teamLeads[0]?.id} className="w-full">
-          <TabsList className="w-full justify-start">
-            {teamLeads.map((teamLead) => (
-              <TabsTrigger
-                key={teamLead.id}
-                value={teamLead.id}
-                onClick={() => setSelectedTeamLead(teamLead.id)}
-              >
-                {teamLead.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {teamLeads.map((teamLead) => (
-            <TabsContent key={teamLead.id} value={teamLead.id}>
-              {showForm && selectedTeamLead === teamLead.id && (
-                <StatForm teamLeadId={teamLead.id} onSuccess={fetchStats} />
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
-                <StatCard
-                  title="Calls"
-                  value={totalStats.calls}
-                  icon={<Phone className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="Emails"
-                  value={totalStats.emails}
-                  icon={<Mail className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="Live Chat"
-                  value={totalStats.live_chat}
-                  icon={<MessageSquare className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="Escalations"
-                  value={totalStats.escalations}
-                  icon={<ArrowUpRight className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="QA Assessments"
-                  value={totalStats.qa_assessments}
-                  icon={<Shield className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="Average Handle Time"
-                  value={totalStats.average_handling_time / statsCount}
-                  suffix=" min"
-                  icon={<Clock className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="Average Wait Time"
-                  value={totalStats.average_wait_time / statsCount}
-                  suffix=" min"
-                  icon={<Timer className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="Abandon Rate"
-                  value={totalStats.abandon_rate / statsCount}
-                  suffix="%"
-                  icon={<AlertCircle className="w-5 h-5" />}
-                />
-                <StatCard
-                  title="SLA Percentage"
-                  value={totalStats.sla_percentage / statsCount}
-                  suffix="%"
-                  icon={<CheckCircle2 className="w-5 h-5" />}
-                  highlight
-                />
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+        <TeamLeadTabs
+          teamLeads={teamLeads}
+          selectedTeamLead={selectedTeamLead}
+          setSelectedTeamLead={setSelectedTeamLead}
+          showForm={showForm}
+          stats={stats}
+          fetchStats={fetchStats}
+        />
       </div>
     </div>
   );
 };
-
-interface StatCardProps { 
-  title: string; 
-  value: number; 
-  icon: React.ReactNode;
-  highlight?: boolean;
-  suffix?: string;
-}
-
-const StatCard = ({ title, value, icon, highlight = false, suffix = '' }: StatCardProps) => (
-  <Card className={`p-6 ${highlight ? 'border-primary/30 bg-primary/5' : ''}`}>
-    <div className="flex justify-between items-start mb-4">
-      <p className="text-muted-foreground font-medium">{title}</p>
-      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-        {icon}
-      </div>
-    </div>
-    <div className="flex items-end justify-between">
-      <h3 className="text-3xl font-bold">
-        {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}{suffix}
-      </h3>
-    </div>
-  </Card>
-);
 
 export default Index;
