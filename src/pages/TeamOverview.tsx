@@ -71,9 +71,6 @@ const TeamOverview = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Calls</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Emails</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Live Chat</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Avg Handle Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Avg Wait Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Abandon Rate</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">SLA %</th>
                 </tr>
               </thead>
@@ -84,9 +81,6 @@ const TeamOverview = () => {
                     <td className="px-6 py-4 whitespace-nowrap">{item.total_calls?.toLocaleString() ?? 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{item.total_emails?.toLocaleString() ?? 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{item.total_live_chat?.toLocaleString() ?? 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.avg_handling_time_minutes?.toFixed(1) ?? 0} min</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.avg_wait_time_minutes?.toFixed(1) ?? 0} min</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.average_abandon_rate?.toFixed(1) ?? 0}%</td>
                     <td className="px-6 py-4 whitespace-nowrap">{item.average_sla?.toFixed(1) ?? 0}%</td>
                   </tr>
                 ))}

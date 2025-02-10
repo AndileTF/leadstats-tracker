@@ -14,9 +14,6 @@ export interface DailyStats {
   live_chat: number | null;
   escalations: number | null;
   qa_assessments: number | null;
-  average_handling_time: string;
-  average_wait_time: string;
-  abandon_rate: number;
   sla_percentage: number;
   created_at: string;
 }
@@ -29,9 +26,6 @@ export interface TeamLeadOverview {
   total_live_chat: number | null;
   total_escalations: number | null;
   total_qa_assessments: number | null;
-  avg_handling_time_minutes: number | null;
-  avg_wait_time_minutes: number | null;
-  average_abandon_rate: number | null;
   average_sla: number | null;
 }
 

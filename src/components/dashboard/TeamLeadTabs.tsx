@@ -28,9 +28,6 @@ export const TeamLeadTabs = ({
       live_chat: acc.live_chat + (curr.live_chat || 0),
       escalations: acc.escalations + (curr.escalations || 0),
       qa_assessments: acc.qa_assessments + (curr.qa_assessments || 0),
-      average_handling_time: acc.average_handling_time + parseFloat(curr.average_handling_time) || 0,
-      average_wait_time: acc.average_wait_time + parseFloat(curr.average_wait_time) || 0,
-      abandon_rate: acc.abandon_rate + (curr.abandon_rate || 0),
       sla_percentage: acc.sla_percentage + (curr.sla_percentage || 0),
     }), {
       calls: 0,
@@ -38,9 +35,6 @@ export const TeamLeadTabs = ({
       live_chat: 0,
       escalations: 0,
       qa_assessments: 0,
-      average_handling_time: 0,
-      average_wait_time: 0,
-      abandon_rate: 0,
       sla_percentage: 0,
     });
   };

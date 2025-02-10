@@ -1,8 +1,8 @@
 
 import { StatCard } from "./StatCard";
 import {
-  ArrowUpRight, BarChart3, Calendar, Mail, MessageSquare,
-  Phone, Shield, Clock, Timer, AlertCircle, CheckCircle2
+  ArrowUpRight, Phone, Mail, MessageSquare,
+  Shield, CheckCircle2
 } from "lucide-react";
 
 interface StatsGridProps {
@@ -12,9 +12,6 @@ interface StatsGridProps {
     live_chat: number;
     escalations: number;
     qa_assessments: number;
-    average_handling_time: number;
-    average_wait_time: number;
-    abandon_rate: number;
     sla_percentage: number;
   };
   statsCount: number;
@@ -47,24 +44,6 @@ export const StatsGrid = ({ totalStats, statsCount }: StatsGridProps) => {
         title="QA Assessments"
         value={totalStats.qa_assessments}
         icon={<Shield className="w-5 h-5" />}
-      />
-      <StatCard
-        title="Average Handle Time"
-        value={totalStats.average_handling_time / statsCount}
-        suffix=" min"
-        icon={<Clock className="w-5 h-5" />}
-      />
-      <StatCard
-        title="Average Wait Time"
-        value={totalStats.average_wait_time / statsCount}
-        suffix=" min"
-        icon={<Timer className="w-5 h-5" />}
-      />
-      <StatCard
-        title="Abandon Rate"
-        value={totalStats.abandon_rate / statsCount}
-        suffix="%"
-        icon={<AlertCircle className="w-5 h-5" />}
       />
       <StatCard
         title="SLA Percentage"
