@@ -29,4 +29,4 @@ export interface TeamLeadOverview {
   average_sla: number | null;
 }
 
-export type DateFilter = 'day' | 'week' | 'month' | 'custom';
+export type DateFilter = 'today' | 'day' | 'week' | 'month' | 'custom';

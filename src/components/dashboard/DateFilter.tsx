@@ -3,12 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface DateFilterProps {
-  dateFilter: 'day' | 'week' | 'month' | 'custom';
-  setDateFilter: (filter: 'day' | 'week' | 'month' | 'custom') => void;
+  dateFilter: 'today' | 'day' | 'week' | 'month' | 'custom';
+  setDateFilter: (filter: 'today' | 'day' | 'week' | 'month' | 'custom') => void;
   customDate: string;
   setCustomDate: (date: string) => void;
 }
 
+/**
+ * DateFilter component for selecting different time periods
+ * @param dateFilter - Current selected filter
+ * @param setDateFilter - Function to update filter
+ * @param customDate - Custom date value
+ * @param setCustomDate - Function to update custom date
+ */
 export const DateFilter = ({
   dateFilter,
   setDateFilter,
@@ -18,6 +25,13 @@ export const DateFilter = ({
   return (
     <div className="flex gap-4">
       <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setDateFilter('today')}
+          className={dateFilter === 'today' ? 'bg-primary/20' : ''}
+        >
+          Today
+        </Button>
         <Button
           variant="outline"
           onClick={() => setDateFilter('day')}

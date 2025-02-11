@@ -5,58 +5,70 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLeadOverview } from "@/types/teamLead";
-import { ArrowLeft, Filter, Download, Upload } from "lucide-react";
+import { ArrowLeft, Download, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
-import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { format, startOfToday, endOfToday, subDays, subWeeks, subMonths } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { format, subDays, subWeeks, subMonths } from "date-fns";
+import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
+import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
 
+/**
+ * TeamOverview component displays performance metrics for all team leads
+ */
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<'week' | '2weeks' | 'month' | 'custom'>('week');
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [dateFilter, setDateFilter] = useState<'today' | 'day' | 'week' | 'month' | 'custom'>('today');
+  const [customDate, setCustomDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchOverview();
-  }, [dateRange, customStartDate, customEndDate]);
+  }, [dateFilter, customDate]);
 
+  /**
+   * Gets the date range based on the selected filter
+   * @returns Object containing start and end dates
+   */
   const getDateRange = () => {
-    const endDate = new Date();
-    let startDate = new Date();
+    const today = new Date();
+    let startDate: Date;
+    let endDate: Date;
 
-    switch (dateRange) {
-      case 'week':
-        startDate = subDays(endDate, 7);
+    switch (dateFilter) {
+      case 'today':
+        startDate = startOfToday();
+        endDate = endOfToday();
         break;
-      case '2weeks':
-        startDate = subWeeks(endDate, 2);
+      case 'day':
+        startDate = subDays(today, 1);
+        endDate = today;
+        break;
+      case 'week':
+        startDate = subDays(today, 7);
+        endDate = today;
         break;
       case 'month':
-        startDate = subMonths(endDate, 1);
+        startDate = subMonths(today, 1);
+        endDate = today;
         break;
       case 'custom':
-        if (customStartDate && customEndDate) {
-          return { startDate: customStartDate, endDate: customEndDate };
-        }
-        startDate = subDays(endDate, 7); // Default to week if custom dates not set
+        startDate = new Date(customDate);
+        endDate = new Date(customDate);
+        endDate.setHours(23, 59, 59);
         break;
+      default:
+        startDate = startOfToday();
+        endDate = endOfToday();
     }
 
     return { startDate, endDate };
   };
 
+  /**
+   * Fetches overview data from the database
+   */
   const fetchOverview = async () => {
     try {
       const { startDate, endDate } = getDateRange();
@@ -130,12 +142,10 @@ const TeamOverview = () => {
     }
   };
 
-  const getTotalIssuesHandled = (item: TeamLeadOverview) => {
-    return (item.total_calls || 0) + 
-           (item.total_emails || 0) + 
-           (item.total_live_chat || 0);
-  };
-
+  /**
+   * Handles Excel file upload
+   * @param event - File input change event
+   */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -150,7 +160,6 @@ const TeamOverview = () => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         // Process and validate the data here
-        // Then upload to Supabase
         toast({
           title: "Success",
           description: "Stats imported successfully",
@@ -166,6 +175,9 @@ const TeamOverview = () => {
     }
   };
 
+  /**
+   * Exports overview data to Excel file
+   */
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(overview);
     const wb = XLSX.utils.book_new();
@@ -220,83 +232,53 @@ const TeamOverview = () => {
 
         <Card className="p-6">
           <div className="flex gap-4 mb-6">
-            <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">Last Week</SelectItem>
-                <SelectItem value="2weeks">Last 2 Weeks</SelectItem>
-                <SelectItem value="month">Last Month</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {dateRange === 'custom' && (
-              <div className="flex gap-4">
-                <DatePicker
-                  selected={customStartDate}
-                  onSelect={setCustomStartDate}
-                  placeholder="Start date"
-                />
-                <DatePicker
-                  selected={customEndDate}
-                  onSelect={setCustomEndDate}
-                  placeholder="End date"
-                />
-              </div>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => setDateFilter('today')}
+              className={dateFilter === 'today' ? 'bg-primary/20' : ''}
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setDateFilter('day')}
+              className={dateFilter === 'day' ? 'bg-primary/20' : ''}
+            >
+              Yesterday
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setDateFilter('week')}
+              className={dateFilter === 'week' ? 'bg-primary/20' : ''}
+            >
+              Last Week
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setDateFilter('month')}
+              className={dateFilter === 'month' ? 'bg-primary/20' : ''}
+            >
+              Last Month
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDateFilter('custom')}
+                className={dateFilter === 'custom' ? 'bg-primary/20' : ''}
+              >
+                Custom
+              </Button>
+              <Input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="w-40"
+              />
+            </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Performance Metrics Chart</h2>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={overview}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="total_calls" fill="#8884d8" name="Total Calls" />
-                <Bar dataKey="total_emails" fill="#82ca9d" name="Total Emails" />
-                <Bar dataKey="total_live_chat" fill="#ffc658" name="Total Live Chat" />
-                <Bar dataKey="total_escalations" fill="#ff7f0e" name="Total Escalations" />
-                <Bar dataKey="total_qa_assessments" fill="#2ca02c" name="Total QA Assessments" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <h2 className="text-xl font-semibold mb-4">Team Performance</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Team Lead</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Calls</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Emails</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Live Chat</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Escalations</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total QA Assessments</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Issues Handled</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">SLA %</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {overview.map((item) => (
-                  <tr key={item.name} className="hover:bg-gray-800/50">
-                    <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_calls?.toLocaleString() ?? 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_emails?.toLocaleString() ?? 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_live_chat?.toLocaleString() ?? 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_escalations?.toLocaleString() ?? 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.total_qa_assessments?.toLocaleString() ?? 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getTotalIssuesHandled(item).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.average_sla?.toFixed(1) ?? 0}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PerformanceChart data={overview} />
+          <PerformanceTable data={overview} />
         </Card>
       </div>
     </div>
