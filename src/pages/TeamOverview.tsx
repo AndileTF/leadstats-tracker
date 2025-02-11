@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLeadOverview } from "@/types/teamLead";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Filter } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
@@ -37,6 +38,12 @@ const TeamOverview = () => {
     }
   };
 
+  const getTotalIssuesHandled = (item: TeamLeadOverview) => {
+    return (item.total_calls || 0) + 
+           (item.total_emails || 0) + 
+           (item.total_live_chat || 0);
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -62,6 +69,22 @@ const TeamOverview = () => {
         </div>
 
         <Card className="p-6">
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Performance Metrics Chart</h2>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={overview}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total_calls" fill="#8884d8" name="Total Calls" />
+                <Bar dataKey="total_emails" fill="#82ca9d" name="Total Emails" />
+                <Bar dataKey="total_live_chat" fill="#ffc658" name="Total Live Chat" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
           <h2 className="text-xl font-semibold mb-4">Team Performance</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-700">
@@ -71,6 +94,9 @@ const TeamOverview = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Calls</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Emails</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Live Chat</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Escalations</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total QA Assessments</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Issues Handled</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">SLA %</th>
                 </tr>
               </thead>
@@ -81,6 +107,9 @@ const TeamOverview = () => {
                     <td className="px-6 py-4 whitespace-nowrap">{item.total_calls?.toLocaleString() ?? 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{item.total_emails?.toLocaleString() ?? 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{item.total_live_chat?.toLocaleString() ?? 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.total_escalations?.toLocaleString() ?? 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{item.total_qa_assessments?.toLocaleString() ?? 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getTotalIssuesHandled(item).toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{item.average_sla?.toFixed(1) ?? 0}%</td>
                   </tr>
                 ))}
