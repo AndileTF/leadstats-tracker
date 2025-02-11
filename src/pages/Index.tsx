@@ -79,13 +79,7 @@ const Index = () => {
 
       if (error) throw error;
 
-      const formattedData = (data || []).map(stat => ({
-        ...stat,
-        average_handling_time: String(stat.average_handling_time),
-        average_wait_time: String(stat.average_wait_time)
-      }));
-
-      setStats(formattedData);
+      setStats(data || []);
     } catch (error) {
       toast({
         title: "Error",
