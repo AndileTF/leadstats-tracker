@@ -1,17 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import { TeamLeadOverview } from "@/types/teamLead";
-import { ArrowLeft, Download, Upload } from "lucide-react";
+import { TeamLeadOverview, DateFilter } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
-import * as XLSX from 'xlsx';
 import { format, startOfToday, endOfToday, subDays, subWeeks, subMonths } from "date-fns";
-import { Input } from "@/components/ui/input";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
+import { DateFilter as DateFilterComponent } from "@/components/dashboard/DateFilter";
+import { TeamOverviewHeader } from "@/components/dashboard/TeamOverviewHeader";
+import { FileHandlers } from "@/components/dashboard/FileHandlers";
 
 /**
  * TeamOverview component displays performance metrics for all team leads
@@ -19,9 +17,8 @@ import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateFilter, setDateFilter] = useState<'today' | 'day' | 'week' | 'month' | 'custom'>('today');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [customDate, setCustomDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchOverview();
@@ -142,49 +139,6 @@ const TeamOverview = () => {
     }
   };
 
-  /**
-   * Handles Excel file upload
-   * @param event - File input change event
-   */
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        // Process and validate the data here
-        toast({
-          title: "Success",
-          description: "Stats imported successfully",
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to import stats",
-        variant: "destructive",
-      });
-    }
-  };
-
-  /**
-   * Exports overview data to Excel file
-   */
-  const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(overview);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Team Overview");
-    XLSX.writeFile(wb, "team-overview.xlsx");
-  };
-
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -193,89 +147,17 @@ const TeamOverview = () => {
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <div>
-            <Button 
-              variant="ghost" 
-              className="mb-4"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">
-              Team Overview
-            </h1>
-            <p className="text-muted-foreground mt-2">Overall performance metrics for all teams</p>
-          </div>
-          <div className="flex gap-4">
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="file-upload"
-            />
-            <label htmlFor="file-upload">
-              <Button variant="outline" asChild>
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import Excel
-                </span>
-              </Button>
-            </label>
-            <Button variant="outline" onClick={exportToExcel}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
-          </div>
+          <TeamOverviewHeader />
+          <FileHandlers data={overview} />
         </div>
 
         <Card className="p-6">
-          <div className="flex gap-4 mb-6">
-            <Button
-              variant="outline"
-              onClick={() => setDateFilter('today')}
-              className={dateFilter === 'today' ? 'bg-primary/20' : ''}
-            >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDateFilter('day')}
-              className={dateFilter === 'day' ? 'bg-primary/20' : ''}
-            >
-              Yesterday
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDateFilter('week')}
-              className={dateFilter === 'week' ? 'bg-primary/20' : ''}
-            >
-              Last Week
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDateFilter('month')}
-              className={dateFilter === 'month' ? 'bg-primary/20' : ''}
-            >
-              Last Month
-            </Button>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setDateFilter('custom')}
-                className={dateFilter === 'custom' ? 'bg-primary/20' : ''}
-              >
-                Custom
-              </Button>
-              <Input
-                type="date"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-                className="w-40"
-              />
-            </div>
-          </div>
+          <DateFilterComponent
+            dateFilter={dateFilter}
+            setDateFilter={setDateFilter}
+            customDate={customDate}
+            setCustomDate={setCustomDate}
+          />
 
           <PerformanceChart data={overview} />
           <PerformanceTable data={overview} />
