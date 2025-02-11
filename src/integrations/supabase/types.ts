@@ -79,7 +79,9 @@ export type Database = {
       team_lead_overview: {
         Row: {
           average_sla: number | null
+          end_date: string | null
           name: string | null
+          start_date: string | null
           total_calls: number | null
           total_days: number | null
           total_emails: number | null

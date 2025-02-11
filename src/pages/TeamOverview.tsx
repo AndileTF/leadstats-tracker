@@ -63,15 +63,62 @@ const TeamOverview = () => {
       const formattedStartDate = format(startDate, 'yyyy-MM-dd');
       const formattedEndDate = format(endDate, 'yyyy-MM-dd');
 
-      const { data, error } = await supabase
-        .from('team_lead_overview')
-        .select('*')
+      const { data: dailyStats, error } = await supabase
+        .from('daily_stats')
+        .select(`
+          team_leads (
+            name
+          ),
+          calls,
+          emails,
+          live_chat,
+          escalations,
+          qa_assessments,
+          sla_percentage
+        `)
         .gte('date', formattedStartDate)
         .lte('date', formattedEndDate);
 
       if (error) throw error;
 
-      setOverview(data || []);
+      // Transform daily stats into overview format
+      const overview = dailyStats.reduce((acc: { [key: string]: any }, curr) => {
+        const name = curr.team_leads?.name;
+        if (!name) return acc;
+        
+        if (!acc[name]) {
+          acc[name] = {
+            name,
+            total_calls: 0,
+            total_emails: 0,
+            total_live_chat: 0,
+            total_escalations: 0,
+            total_qa_assessments: 0,
+            total_days: 0,
+            average_sla: 0,
+            sla_count: 0
+          };
+        }
+        
+        acc[name].total_calls += curr.calls || 0;
+        acc[name].total_emails += curr.emails || 0;
+        acc[name].total_live_chat += curr.live_chat || 0;
+        acc[name].total_escalations += curr.escalations || 0;
+        acc[name].total_qa_assessments += curr.qa_assessments || 0;
+        acc[name].average_sla += curr.sla_percentage || 0;
+        acc[name].sla_count += 1;
+        acc[name].total_days += 1;
+        
+        return acc;
+      }, {});
+
+      // Calculate final averages and convert to array
+      const overviewArray = Object.values(overview).map((item: any) => ({
+        ...item,
+        average_sla: item.sla_count > 0 ? item.average_sla / item.sla_count : 0
+      }));
+
+      setOverview(overviewArray as TeamLeadOverview[]);
     } catch (error) {
       toast({
         title: "Error",
