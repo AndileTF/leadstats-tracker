@@ -18,6 +18,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     live_chat: 0,
     escalations: 0,
     qa_assessments: 0,
+    survey_tickets: 0,
     sla_percentage: 0,
   });
 
@@ -47,6 +48,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
         live_chat: 0,
         escalations: 0,
         qa_assessments: 0,
+        survey_tickets: 0,
         sla_percentage: 0,
       });
     } catch (error) {
@@ -104,6 +106,15 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
               type="number"
               value={stats.qa_assessments}
               onChange={(e) => setStats({ ...stats, qa_assessments: parseInt(e.target.value) || 0 })}
+              min="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">Survey Tickets</label>
+            <Input
+              type="number"
+              value={stats.survey_tickets}
+              onChange={(e) => setStats({ ...stats, survey_tickets: parseInt(e.target.value) || 0 })}
               min="0"
             />
           </div>

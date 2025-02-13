@@ -28,6 +28,7 @@ export const TeamLeadTabs = ({
       live_chat: acc.live_chat + (curr.live_chat || 0),
       escalations: acc.escalations + (curr.escalations || 0),
       qa_assessments: acc.qa_assessments + (curr.qa_assessments || 0),
+      survey_tickets: acc.survey_tickets + (curr.survey_tickets || 0),
       sla_percentage: acc.sla_percentage + (curr.sla_percentage || 0),
     }), {
       calls: 0,
@@ -35,6 +36,7 @@ export const TeamLeadTabs = ({
       live_chat: 0,
       escalations: 0,
       qa_assessments: 0,
+      survey_tickets: 0,
       sla_percentage: 0,
     });
   };

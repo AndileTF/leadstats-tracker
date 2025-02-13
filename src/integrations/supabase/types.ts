@@ -11,18 +11,42 @@ export type Database = {
     Tables: {
       "After Call Survey Tickets": {
         Row: {
-          Date: string
-          Name: string
+          created_at: string
+          date: string
+          id: string
+          team_lead_id: string
+          ticket_count: number | null
         }
         Insert: {
-          Date: string
-          Name: string
+          created_at?: string
+          date?: string
+          id?: string
+          team_lead_id: string
+          ticket_count?: number | null
         }
         Update: {
-          Date?: string
-          Name?: string
+          created_at?: string
+          date?: string
+          id?: string
+          team_lead_id?: string
+          ticket_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "After Call Survey Tickets_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "After Call Survey Tickets_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
       }
       Calls: {
         Row: {
@@ -71,6 +95,7 @@ export type Database = {
           live_chat: number | null
           qa_assessments: number | null
           sla_percentage: number
+          survey_tickets: number | null
           team_lead_id: string
         }
         Insert: {
@@ -83,6 +108,7 @@ export type Database = {
           live_chat?: number | null
           qa_assessments?: number | null
           sla_percentage?: number
+          survey_tickets?: number | null
           team_lead_id: string
         }
         Update: {
@@ -95,6 +121,7 @@ export type Database = {
           live_chat?: number | null
           qa_assessments?: number | null
           sla_percentage?: number
+          survey_tickets?: number | null
           team_lead_id?: string
         }
         Relationships: [
@@ -302,6 +329,7 @@ export type Database = {
           total_emails: number | null
           total_escalations: number | null
           total_qa_assessments: number | null
+          total_survey_tickets: number | null
         }
         Relationships: []
       }

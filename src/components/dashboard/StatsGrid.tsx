@@ -2,7 +2,7 @@
 import { StatCard } from "./StatCard";
 import {
   ArrowUpRight, Phone, Mail, MessageSquare,
-  Shield, CheckCircle2
+  Shield, CheckCircle2, ClipboardList
 } from "lucide-react";
 
 interface StatsGridProps {
@@ -12,6 +12,7 @@ interface StatsGridProps {
     live_chat: number;
     escalations: number;
     qa_assessments: number;
+    survey_tickets: number;
     sla_percentage: number;
   };
   statsCount: number;
@@ -44,6 +45,11 @@ export const StatsGrid = ({ totalStats, statsCount }: StatsGridProps) => {
         title="QA Assessments"
         value={totalStats.qa_assessments}
         icon={<Shield className="w-5 h-5" />}
+      />
+      <StatCard
+        title="Survey Tickets"
+        value={totalStats.survey_tickets}
+        icon={<ClipboardList className="w-5 h-5" />}
       />
       <StatCard
         title="SLA Percentage"
