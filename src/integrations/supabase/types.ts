@@ -26,18 +26,39 @@ export type Database = {
       }
       Calls: {
         Row: {
+          call_count: number | null
           Date: string
           Name: string
+          team_lead_id: string | null
         }
         Insert: {
+          call_count?: number | null
           Date: string
           Name: string
+          team_lead_id?: string | null
         }
         Update: {
+          call_count?: number | null
           Date?: string
           Name?: string
+          team_lead_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Calls_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Calls_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
       }
       daily_stats: {
         Row: {
@@ -84,67 +105,158 @@ export type Database = {
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "daily_stats_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
         ]
       }
       Emails: {
         Row: {
           Date: string
+          email_count: number | null
           Name: string
+          team_lead_id: string | null
         }
         Insert: {
           Date: string
+          email_count?: number | null
           Name: string
+          team_lead_id?: string | null
         }
         Update: {
           Date?: string
+          email_count?: number | null
           Name?: string
+          team_lead_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Emails_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Emails_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
       }
       Escalations: {
         Row: {
           Date: string
+          escalation_count: number | null
           Name: string
+          team_lead_id: string | null
         }
         Insert: {
           Date: string
+          escalation_count?: number | null
           Name: string
+          team_lead_id?: string | null
         }
         Update: {
           Date?: string
+          escalation_count?: number | null
           Name?: string
+          team_lead_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Escalations_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Escalations_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
       }
       "Live Chat": {
         Row: {
+          chat_count: number | null
           Date: string
           Name: string
+          team_lead_id: string | null
         }
         Insert: {
+          chat_count?: number | null
           Date: string
           Name: string
+          team_lead_id?: string | null
         }
         Update: {
+          chat_count?: number | null
           Date?: string
           Name?: string
+          team_lead_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Live Chat_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Live Chat_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
       }
       "QA Table": {
         Row: {
+          assessment_count: number | null
           Assessor: string
           Date: string
+          team_lead_id: string | null
         }
         Insert: {
+          assessment_count?: number | null
           Assessor: string
           Date: string
+          team_lead_id?: string | null
         }
         Update: {
+          assessment_count?: number | null
           Assessor?: string
           Date?: string
+          team_lead_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "QA Table_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "QA Table_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
       }
       team_leads: {
         Row: {
@@ -177,6 +289,18 @@ export type Database = {
           total_emails: number | null
           total_escalations: number | null
           total_live_chat: number | null
+          total_qa_assessments: number | null
+        }
+        Relationships: []
+      }
+      team_metrics: {
+        Row: {
+          team_lead_id: string | null
+          team_lead_name: string | null
+          total_calls: number | null
+          total_chats: number | null
+          total_emails: number | null
+          total_escalations: number | null
           total_qa_assessments: number | null
         }
         Relationships: []
