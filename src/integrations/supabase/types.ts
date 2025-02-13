@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      "After Call Survey Tickets": {
+        Row: {
+          Date: string
+          Name: string
+        }
+        Insert: {
+          Date: string
+          Name: string
+        }
+        Update: {
+          Date?: string
+          Name?: string
+        }
+        Relationships: []
+      }
+      Calls: {
+        Row: {
+          Date: string
+          Name: string
+        }
+        Insert: {
+          Date: string
+          Name: string
+        }
+        Update: {
+          Date?: string
+          Name?: string
+        }
+        Relationships: []
+      }
       daily_stats: {
         Row: {
           calls: number | null
@@ -55,6 +85,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      Emails: {
+        Row: {
+          Date: string
+          Name: string
+        }
+        Insert: {
+          Date: string
+          Name: string
+        }
+        Update: {
+          Date?: string
+          Name?: string
+        }
+        Relationships: []
+      }
+      Escalations: {
+        Row: {
+          Date: string
+          Name: string
+        }
+        Insert: {
+          Date: string
+          Name: string
+        }
+        Update: {
+          Date?: string
+          Name?: string
+        }
+        Relationships: []
+      }
+      "Live Chat": {
+        Row: {
+          Date: string
+          Name: string
+        }
+        Insert: {
+          Date: string
+          Name: string
+        }
+        Update: {
+          Date?: string
+          Name?: string
+        }
+        Relationships: []
       }
       "QA Table": {
         Row: {
