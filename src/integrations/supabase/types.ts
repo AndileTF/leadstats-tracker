@@ -56,6 +56,21 @@ export type Database = {
           },
         ]
       }
+      "QA Table": {
+        Row: {
+          Assessor: string
+          Date: string
+        }
+        Insert: {
+          Assessor: string
+          Date: string
+        }
+        Update: {
+          Assessor?: string
+          Date?: string
+        }
+        Relationships: []
+      }
       team_leads: {
         Row: {
           created_at: string
