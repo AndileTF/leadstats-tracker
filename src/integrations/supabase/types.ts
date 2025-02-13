@@ -56,27 +56,6 @@ export type Database = {
           },
         ]
       }
-      QA: {
-        Row: {
-          assessor: string
-          created_at: string
-          date: string
-          id: string
-        }
-        Insert: {
-          assessor: string
-          created_at?: string
-          date: string
-          id?: string
-        }
-        Update: {
-          assessor?: string
-          created_at?: string
-          date?: string
-          id?: string
-        }
-        Relationships: []
-      }
       "QA Table": {
         Row: {
           Assessor: string
