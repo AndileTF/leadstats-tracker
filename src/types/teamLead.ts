@@ -29,4 +29,7 @@ export interface TeamLeadOverview {
   total_survey_tickets: number | null;
 }
 
-export type DateFilter = 'today' | 'day' | 'week' | 'month' | 'custom';
+export interface DateRange {
+  startDate: string;
+  endDate: string;
+}

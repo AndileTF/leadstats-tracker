@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { TeamLead, DailyStats, DateFilter as DateFilterType } from "@/types/teamLead";
-import { format, startOfWeek, startOfMonth, parseISO } from 'date-fns';
+import { TeamLead, DailyStats, DateRange } from "@/types/teamLead";
+import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { DateFilter } from "@/components/dashboard/DateFilter";
 import { TeamLeadTabs } from "@/components/dashboard/TeamLeadTabs";
@@ -13,10 +13,12 @@ const Index = () => {
   const [showForm, setShowForm] = useState(false);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [stats, setStats] = useState<DailyStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [customDate, setCustomDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: format(new Date(), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd')
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,7 +29,7 @@ const Index = () => {
     if (selectedTeamLead) {
       fetchStats();
     }
-  }, [selectedTeamLead, dateFilter, customDate]);
+  }, [selectedTeamLead, dateRange]);
 
   const fetchTeamLeads = async () => {
     try {
@@ -52,31 +54,14 @@ const Index = () => {
     }
   };
 
-  const getDateRange = () => {
-    const now = new Date();
-    switch (dateFilter) {
-      case 'today':
-        return now;
-      case 'week':
-        return startOfWeek(now);
-      case 'month':
-        return startOfMonth(now);
-      case 'custom':
-        return parseISO(customDate);
-      case 'day':
-      default:
-        return now;
-    }
-  };
-
   const fetchStats = async () => {
     try {
-      const startDate = getDateRange();
       const { data, error } = await supabase
         .from('daily_stats')
         .select('*')
         .eq('team_lead_id', selectedTeamLead)
-        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate)
         .order('date', { ascending: false });
 
       if (error) throw error;
@@ -107,10 +92,8 @@ const Index = () => {
           </div>
           <div className="flex gap-4">
             <DateFilter
-              dateFilter={dateFilter}
-              setDateFilter={setDateFilter}
-              customDate={customDate}
-              setCustomDate={setCustomDate}
+              dateRange={dateRange}
+              setDateRange={setDateRange}
             />
             <Button 
               onClick={() => setShowForm(!showForm)}
