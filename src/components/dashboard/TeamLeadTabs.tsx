@@ -1,6 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TeamLead, DailyStats, DateFilter as DateFilterType } from "@/types/teamLead";
+import { TeamLead, DailyStats } from "@/types/teamLead";
 import { StatForm } from "@/components/StatForm";
 import { StatsGrid } from "./StatsGrid";
 
