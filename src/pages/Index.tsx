@@ -13,7 +13,7 @@ const Index = () => {
   const [showForm, setShowForm] = useState(false);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('day');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [stats, setStats] = useState<DailyStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [customDate, setCustomDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -55,6 +55,8 @@ const Index = () => {
   const getDateRange = () => {
     const now = new Date();
     switch (dateFilter) {
+      case 'today':
+        return now;
       case 'week':
         return startOfWeek(now);
       case 'month':
