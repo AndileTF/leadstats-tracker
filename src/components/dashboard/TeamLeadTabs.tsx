@@ -3,6 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamLead, DailyStats } from "@/types/teamLead";
 import { StatForm } from "@/components/StatForm";
 import { StatsGrid } from "./StatsGrid";
+import { DateFilter } from "./DateFilter";
+import { useState } from "react";
+import { format } from "date-fns";
 
 interface TeamLeadTabsProps {
   teamLeads: TeamLead[];
@@ -21,6 +24,9 @@ export const TeamLeadTabs = ({
   stats,
   fetchStats
 }: TeamLeadTabsProps) => {
+  const [dateFilter, setDateFilter] = useState<'today' | 'day' | 'week' | 'month' | 'custom'>('today');
+  const [customDate, setCustomDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+
   const calculateTotalStats = () => {
     return stats.reduce((acc, curr) => ({
       calls: acc.calls + (curr.calls || 0),
@@ -29,7 +35,6 @@ export const TeamLeadTabs = ({
       escalations: acc.escalations + (curr.escalations || 0),
       qa_assessments: acc.qa_assessments + (curr.qa_assessments || 0),
       survey_tickets: acc.survey_tickets + (curr.survey_tickets || 0),
-      sla_percentage: acc.sla_percentage + (curr.sla_percentage || 0),
     }), {
       calls: 0,
       emails: 0,
@@ -37,7 +42,6 @@ export const TeamLeadTabs = ({
       escalations: 0,
       qa_assessments: 0,
       survey_tickets: 0,
-      sla_percentage: 0,
     });
   };
 
@@ -45,28 +49,37 @@ export const TeamLeadTabs = ({
   const statsCount = stats.length || 1;
 
   return (
-    <Tabs defaultValue={teamLeads[0]?.id} className="w-full">
-      <TabsList className="w-full justify-start">
+    <div className="space-y-6">
+      <DateFilter
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
+        customDate={customDate}
+        setCustomDate={setCustomDate}
+      />
+      
+      <Tabs defaultValue={teamLeads[0]?.id} className="w-full">
+        <TabsList className="w-full justify-start">
+          {teamLeads.map((teamLead) => (
+            <TabsTrigger
+              key={teamLead.id}
+              value={teamLead.id}
+              onClick={() => setSelectedTeamLead(teamLead.id)}
+            >
+              {teamLead.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
         {teamLeads.map((teamLead) => (
-          <TabsTrigger
-            key={teamLead.id}
-            value={teamLead.id}
-            onClick={() => setSelectedTeamLead(teamLead.id)}
-          >
-            {teamLead.name}
-          </TabsTrigger>
+          <TabsContent key={teamLead.id} value={teamLead.id}>
+            {showForm && selectedTeamLead === teamLead.id && (
+              <StatForm teamLeadId={teamLead.id} onSuccess={fetchStats} />
+            )}
+
+            <StatsGrid totalStats={totalStats} statsCount={statsCount} />
+          </TabsContent>
         ))}
-      </TabsList>
-
-      {teamLeads.map((teamLead) => (
-        <TabsContent key={teamLead.id} value={teamLead.id}>
-          {showForm && selectedTeamLead === teamLead.id && (
-            <StatForm teamLeadId={teamLead.id} onSuccess={fetchStats} />
-          )}
-
-          <StatsGrid totalStats={totalStats} statsCount={statsCount} />
-        </TabsContent>
-      ))}
-    </Tabs>
+      </Tabs>
+    </div>
   );
 };

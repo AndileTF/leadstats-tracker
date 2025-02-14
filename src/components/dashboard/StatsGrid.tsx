@@ -2,7 +2,7 @@
 import { StatCard } from "./StatCard";
 import {
   ArrowUpRight, Phone, Mail, MessageSquare,
-  Shield, CheckCircle2, ClipboardList
+  Shield, ClipboardList, Calculator
 } from "lucide-react";
 
 interface StatsGridProps {
@@ -13,12 +13,19 @@ interface StatsGridProps {
     escalations: number;
     qa_assessments: number;
     survey_tickets: number;
-    sla_percentage: number;
   };
   statsCount: number;
 }
 
 export const StatsGrid = ({ totalStats, statsCount }: StatsGridProps) => {
+  const totalIssuesHandled = 
+    totalStats.calls + 
+    totalStats.emails + 
+    totalStats.live_chat + 
+    totalStats.escalations + 
+    totalStats.qa_assessments + 
+    totalStats.survey_tickets;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
       <StatCard
@@ -52,10 +59,9 @@ export const StatsGrid = ({ totalStats, statsCount }: StatsGridProps) => {
         icon={<ClipboardList className="w-5 h-5" />}
       />
       <StatCard
-        title="SLA Percentage"
-        value={totalStats.sla_percentage / statsCount}
-        suffix="%"
-        icon={<CheckCircle2 className="w-5 h-5" />}
+        title="Total Issues Handled"
+        value={totalIssuesHandled}
+        icon={<Calculator className="w-5 h-5" />}
         highlight
       />
     </div>

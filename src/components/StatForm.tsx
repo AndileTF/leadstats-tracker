@@ -19,7 +19,6 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     escalations: 0,
     qa_assessments: 0,
     survey_tickets: 0,
-    sla_percentage: 0,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +48,6 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
         escalations: 0,
         qa_assessments: 0,
         survey_tickets: 0,
-        sla_percentage: 0,
       });
     } catch (error) {
       toast({
@@ -116,17 +114,6 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
               value={stats.survey_tickets}
               onChange={(e) => setStats({ ...stats, survey_tickets: parseInt(e.target.value) || 0 })}
               min="0"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">SLA Percentage (%)</label>
-            <Input
-              type="number"
-              step="0.01"
-              value={stats.sla_percentage}
-              onChange={(e) => setStats({ ...stats, sla_percentage: parseFloat(e.target.value) || 0 })}
-              min="0"
-              max="100"
             />
           </div>
         </div>
