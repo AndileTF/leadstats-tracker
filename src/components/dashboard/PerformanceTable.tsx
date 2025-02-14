@@ -13,7 +13,10 @@ interface PerformanceTableProps {
 const getTotalIssuesHandled = (item: TeamLeadOverview) => {
   return (item.total_calls || 0) + 
          (item.total_emails || 0) + 
-         (item.total_live_chat || 0);
+         (item.total_live_chat || 0) + 
+         (item.total_escalations || 0) + 
+         (item.total_qa_assessments || 0) + 
+         (item.total_survey_tickets || 0);
 };
 
 /**
@@ -34,8 +37,8 @@ export const PerformanceTable = ({ data }: PerformanceTableProps) => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Live Chat</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Escalations</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total QA Assessments</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Survey Tickets</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Issues Handled</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">SLA %</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-700">
@@ -47,8 +50,8 @@ export const PerformanceTable = ({ data }: PerformanceTableProps) => {
                 <td className="px-6 py-4 whitespace-nowrap">{item.total_live_chat?.toLocaleString() ?? 0}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{item.total_escalations?.toLocaleString() ?? 0}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{item.total_qa_assessments?.toLocaleString() ?? 0}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{item.total_survey_tickets?.toLocaleString() ?? 0}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{getTotalIssuesHandled(item).toLocaleString()}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.average_sla?.toFixed(1) ?? 0}%</td>
               </tr>
             ))}
           </tbody>
