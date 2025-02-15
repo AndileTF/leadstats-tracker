@@ -11,6 +11,18 @@ interface FileHandlersProps {
   data: TeamLeadOverview[];
 }
 
+interface ExcelRowData {
+  Name: string;
+  Date: string;
+  Calls: number;
+  Emails: number;
+  LiveChat: number;
+  Escalations: number;
+  QAAssessments: number;
+  SurveyTickets: number;
+  SLAPercentage: number;
+}
+
 /**
  * Component for handling file import and export functionality
  * @param data - Array of team lead overview data for exporting
@@ -31,18 +43,17 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelRowData[];
 
         // First, ensure team lead exists
         for (const row of jsonData) {
-          const name = row.Name as string;
-          if (!name) continue;
+          if (!row.Name) continue;
 
           // Check if team lead exists
           const { data: existingTeamLead } = await supabase
             .from('team_leads')
             .select('id')
-            .eq('name', name)
+            .eq('name', row.Name)
             .single();
 
           let teamLeadId = existingTeamLead?.id;
@@ -51,7 +62,7 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
           if (!teamLeadId) {
             const { data: newTeamLead, error: createError } = await supabase
               .from('team_leads')
-              .insert({ name })
+              .insert({ name: row.Name })
               .select('id')
               .single();
 
