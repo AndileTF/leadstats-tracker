@@ -5,6 +5,7 @@ import { Download, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TeamLeadOverview } from "@/types/teamLead";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FileHandlersProps {
   data: TeamLeadOverview[];
@@ -16,7 +17,7 @@ interface FileHandlersProps {
  */
 export const FileHandlers = ({ data }: FileHandlersProps) => {
   /**
-   * Handles Excel file upload
+   * Handles Excel file upload and database insertion
    * @param event - File input change event
    */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,13 +33,61 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+        // First, ensure team lead exists
+        for (const row of jsonData) {
+          const name = row.Name as string;
+          if (!name) continue;
+
+          // Check if team lead exists
+          const { data: existingTeamLead } = await supabase
+            .from('team_leads')
+            .select('id')
+            .eq('name', name)
+            .single();
+
+          let teamLeadId = existingTeamLead?.id;
+
+          // If team lead doesn't exist, create them
+          if (!teamLeadId) {
+            const { data: newTeamLead, error: createError } = await supabase
+              .from('team_leads')
+              .insert({ name })
+              .select('id')
+              .single();
+
+            if (createError) throw createError;
+            teamLeadId = newTeamLead.id;
+          }
+
+          // Insert daily stats
+          const { error: statsError } = await supabase
+            .from('daily_stats')
+            .insert({
+              team_lead_id: teamLeadId,
+              date: row.Date || new Date().toISOString().split('T')[0],
+              calls: row.Calls || 0,
+              emails: row.Emails || 0,
+              live_chat: row.LiveChat || 0,
+              escalations: row.Escalations || 0,
+              qa_assessments: row.QAAssessments || 0,
+              survey_tickets: row.SurveyTickets || 0,
+              sla_percentage: row.SLAPercentage || 100
+            });
+
+          if (statsError) throw statsError;
+        }
+
         toast({
           title: "Success",
           description: "Stats imported successfully",
         });
+
+        // Refresh the page to show new data
+        window.location.reload();
       };
       reader.readAsArrayBuffer(file);
     } catch (error) {
+      console.error('Import error:', error);
       toast({
         title: "Error",
         description: "Failed to import stats",
