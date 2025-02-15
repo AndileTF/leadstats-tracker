@@ -24,6 +24,47 @@ interface ExcelRowData {
 }
 
 /**
+ * Validates the Excel row data
+ * @param row - Row data from Excel
+ * @returns boolean indicating if the row is valid
+ */
+const validateExcelRow = (row: any): row is ExcelRowData => {
+  if (!row.Name || typeof row.Name !== 'string') {
+    console.error('Invalid or missing Name:', row);
+    return false;
+  }
+
+  // Convert date string to proper format if needed
+  if (row.Date) {
+    try {
+      row.Date = new Date(row.Date).toISOString().split('T')[0];
+    } catch (error) {
+      console.error('Invalid date format for row:', row);
+      return false;
+    }
+  }
+
+  // Ensure numeric fields are numbers and non-negative
+  const numericFields = ['Calls', 'Emails', 'LiveChat', 'Escalations', 'QAAssessments', 'SurveyTickets'];
+  for (const field of numericFields) {
+    row[field] = Number(row[field]) || 0;
+    if (row[field] < 0) {
+      console.error(`Invalid negative value for ${field}:`, row);
+      return false;
+    }
+  }
+
+  // Validate SLA percentage
+  row.SLAPercentage = Number(row.SLAPercentage) || 100;
+  if (row.SLAPercentage < 0 || row.SLAPercentage > 100) {
+    console.error('Invalid SLA percentage:', row);
+    return false;
+  }
+
+  return true;
+};
+
+/**
  * Component for handling file import and export functionality
  * @param data - Array of team lead overview data for exporting
  */
@@ -43,7 +84,18 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelRowData[];
+        const rawData = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log('Raw Excel data:', rawData);
+
+        // Validate and clean the data
+        const jsonData = rawData.filter(validateExcelRow);
+
+        if (jsonData.length === 0) {
+          throw new Error('No valid data found in Excel file');
+        }
+
+        console.log('Validated data:', jsonData);
 
         // First, ensure team lead exists
         for (const row of jsonData) {
@@ -85,12 +137,15 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
               sla_percentage: row.SLAPercentage || 100
             });
 
-          if (statsError) throw statsError;
+          if (statsError) {
+            console.error('Error inserting stats:', statsError);
+            throw statsError;
+          }
         }
 
         toast({
           title: "Success",
-          description: "Stats imported successfully",
+          description: `Imported ${jsonData.length} rows successfully`,
         });
 
         // Refresh the page to show new data
@@ -101,7 +156,7 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
       console.error('Import error:', error);
       toast({
         title: "Error",
-        description: "Failed to import stats",
+        description: error instanceof Error ? error.message : "Failed to import stats",
         variant: "destructive",
       });
     }
