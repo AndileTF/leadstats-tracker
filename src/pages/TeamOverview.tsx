@@ -55,10 +55,13 @@ const TeamOverview = () => {
   const fetchOverview = async () => {
     try {
       console.log('Fetching overview with date range:', dateRange);
-      const { data: dailyStats, error } = await supabase
+      
+      // First, fetch daily stats with team lead names
+      const { data: dailyStats, error: dailyStatsError } = await supabase
         .from('daily_stats')
         .select(`
           team_leads (
+            id,
             name
           ),
           calls,
@@ -66,20 +69,37 @@ const TeamOverview = () => {
           live_chat,
           escalations,
           qa_assessments,
-          survey_tickets,
-          date
+          date,
+          team_lead_id
         `)
         .gte('date', dateRange.startDate)
         .lte('date', dateRange.endDate);
 
-      if (error) throw error;
+      if (dailyStatsError) throw dailyStatsError;
+
+      // Then, fetch survey tickets for the same date range
+      const { data: surveyTickets, error: surveyError } = await supabase
+        .from('After Call Survey Tickets')
+        .select('*')
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate);
+
+      if (surveyError) throw surveyError;
 
       console.log('Fetched daily stats:', dailyStats);
+      console.log('Fetched survey tickets:', surveyTickets);
 
-      // Transform daily stats into overview format
+      // Create a map of team lead ID to survey ticket counts
+      const surveyTicketMap = surveyTickets.reduce((acc: { [key: string]: number }, curr) => {
+        acc[curr.team_lead_id] = (acc[curr.team_lead_id] || 0) + (curr.ticket_count || 0);
+        return acc;
+      }, {});
+
+      // Transform daily stats into overview format, including survey tickets
       const overview = dailyStats.reduce((acc: { [key: string]: any }, curr) => {
         const name = curr.team_leads?.name;
-        if (!name) return acc;
+        const teamLeadId = curr.team_lead_id;
+        if (!name || !teamLeadId) return acc;
         
         if (!acc[name]) {
           acc[name] = {
@@ -99,7 +119,7 @@ const TeamOverview = () => {
         acc[name].total_live_chat += curr.live_chat || 0;
         acc[name].total_escalations += curr.escalations || 0;
         acc[name].total_qa_assessments += curr.qa_assessments || 0;
-        acc[name].total_survey_tickets += curr.survey_tickets || 0;
+        acc[name].total_survey_tickets = surveyTicketMap[teamLeadId] || 0;
         acc[name].total_days += 1;
         
         return acc;
