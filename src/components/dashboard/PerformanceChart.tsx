@@ -26,6 +26,7 @@ export const PerformanceChart = ({ data }: PerformanceChartProps) => {
           <Bar dataKey="total_live_chat" fill="#ffc658" name="Total Live Chat" />
           <Bar dataKey="total_escalations" fill="#ff7f0e" name="Total Escalations" />
           <Bar dataKey="total_qa_assessments" fill="#2ca02c" name="Total QA Assessments" />
+          <Bar dataKey="total_survey_tickets" fill="#d62728" name="Total Survey Tickets" />
         </BarChart>
       </ResponsiveContainer>
     </div>
