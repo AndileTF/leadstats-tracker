@@ -11,9 +11,6 @@ import { DateFilter } from "@/components/dashboard/DateFilter";
 import { TeamOverviewHeader } from "@/components/dashboard/TeamOverviewHeader";
 import { FileHandlers } from "@/components/dashboard/FileHandlers";
 
-/**
- * TeamOverview component displays performance metrics for all team leads
- */
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,30 +20,33 @@ const TeamOverview = () => {
   });
 
   useEffect(() => {
-    fetchOverview();
-
     // Subscribe to real-time changes
     const channel = supabase
       .channel('daily-stats-changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'daily_stats'
         },
         (payload) => {
           console.log('Real-time update received:', payload);
-          fetchOverview(); // Refresh data when changes occur
-          toast({
-            title: "Data Updated",
-            description: "Dashboard data has been refreshed",
-          });
+          // Only refresh if the changed record's date is within our date range
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchOverview();
+            toast({
+              title: "Data Updated",
+              description: "Dashboard data has been refreshed",
+            });
+          }
         }
       )
       .subscribe();
 
-    // Cleanup subscription on unmount
+    fetchOverview(); // Initial fetch when dateRange changes
+
     return () => {
       supabase.removeChannel(channel);
     };
@@ -54,6 +54,7 @@ const TeamOverview = () => {
 
   const fetchOverview = async () => {
     try {
+      console.log('Fetching overview with date range:', dateRange);
       const { data: dailyStats, error } = await supabase
         .from('daily_stats')
         .select(`
@@ -65,12 +66,15 @@ const TeamOverview = () => {
           live_chat,
           escalations,
           qa_assessments,
-          survey_tickets
+          survey_tickets,
+          date
         `)
         .gte('date', dateRange.startDate)
         .lte('date', dateRange.endDate);
 
       if (error) throw error;
+
+      console.log('Fetched daily stats:', dailyStats);
 
       // Transform daily stats into overview format
       const overview = dailyStats.reduce((acc: { [key: string]: any }, curr) => {
@@ -103,6 +107,7 @@ const TeamOverview = () => {
 
       setOverview(Object.values(overview));
     } catch (error) {
+      console.error('Error fetching overview:', error);
       toast({
         title: "Error",
         description: "Failed to fetch overview",

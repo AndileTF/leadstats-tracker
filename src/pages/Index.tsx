@@ -23,6 +23,11 @@ const Index = () => {
 
   useEffect(() => {
     fetchTeamLeads();
+  }, []);
+
+  // Set up real-time subscription whenever selectedTeamLead or dateRange changes
+  useEffect(() => {
+    if (!selectedTeamLead) return;
 
     // Subscribe to real-time changes for daily_stats
     const channel = supabase
@@ -33,28 +38,28 @@ const Index = () => {
           event: '*',
           schema: 'public',
           table: 'daily_stats',
-          filter: selectedTeamLead ? `team_lead_id=eq.${selectedTeamLead}` : undefined
+          filter: `team_lead_id=eq.${selectedTeamLead}`
         },
         (payload) => {
           console.log('Real-time update received:', payload);
-          fetchStats(); // Refresh stats when changes occur
-          toast({
-            title: "Data Updated",
-            description: "Dashboard data has been refreshed",
-          });
+          // Only refresh if the changed record's date is within our date range
+          const changeDate = (payload.new as DailyStats).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endEnd) {
+            fetchStats();
+            toast({
+              title: "Data Updated",
+              description: "Dashboard data has been refreshed",
+            });
+          }
         }
       )
       .subscribe();
 
+    fetchStats(); // Fetch stats when team lead or date range changes
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  useEffect(() => {
-    if (selectedTeamLead) {
-      fetchStats();
-    }
   }, [selectedTeamLead, dateRange]);
 
   const fetchTeamLeads = async () => {
@@ -81,7 +86,10 @@ const Index = () => {
   };
 
   const fetchStats = async () => {
+    if (!selectedTeamLead) return;
+
     try {
+      console.log('Fetching stats with date range:', dateRange);
       const { data, error } = await supabase
         .from('daily_stats')
         .select('*')
@@ -92,8 +100,10 @@ const Index = () => {
 
       if (error) throw error;
 
+      console.log('Fetched stats:', data);
       setStats(data || []);
     } catch (error) {
+      console.error('Error fetching stats:', error);
       toast({
         title: "Error",
         description: "Failed to fetch stats",
