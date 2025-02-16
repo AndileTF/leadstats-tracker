@@ -44,7 +44,7 @@ const Index = () => {
           console.log('Real-time update received:', payload);
           // Only refresh if the changed record's date is within our date range
           const changeDate = (payload.new as DailyStats).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endEnd) {
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
             fetchStats();
             toast({
               title: "Data Updated",
