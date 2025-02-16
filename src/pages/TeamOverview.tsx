@@ -24,6 +24,32 @@ const TeamOverview = () => {
 
   useEffect(() => {
     fetchOverview();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('daily-stats-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'daily_stats'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          fetchOverview(); // Refresh data when changes occur
+          toast({
+            title: "Data Updated",
+            description: "Dashboard data has been refreshed",
+          });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [dateRange]);
 
   const fetchOverview = async () => {

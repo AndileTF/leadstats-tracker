@@ -23,6 +23,32 @@ const Index = () => {
 
   useEffect(() => {
     fetchTeamLeads();
+
+    // Subscribe to real-time changes for daily_stats
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_stats',
+          filter: selectedTeamLead ? `team_lead_id=eq.${selectedTeamLead}` : undefined
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          fetchStats(); // Refresh stats when changes occur
+          toast({
+            title: "Data Updated",
+            description: "Dashboard data has been refreshed",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
