@@ -25,11 +25,9 @@ const Index = () => {
     fetchTeamLeads();
   }, []);
 
-  // Set up real-time subscription whenever selectedTeamLead or dateRange changes
   useEffect(() => {
     if (!selectedTeamLead) return;
 
-    // Subscribe to real-time changes for daily_stats
     const channel = supabase
       .channel('dashboard-changes')
       .on(
@@ -42,7 +40,6 @@ const Index = () => {
         },
         (payload) => {
           console.log('Real-time update received:', payload);
-          // Only refresh if the changed record's date is within our date range
           const changeDate = (payload.new as DailyStats).date;
           if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
             fetchStats();
@@ -55,7 +52,7 @@ const Index = () => {
       )
       .subscribe();
 
-    fetchStats(); // Fetch stats when team lead or date range changes
+    fetchStats();
 
     return () => {
       supabase.removeChannel(channel);
@@ -90,7 +87,9 @@ const Index = () => {
 
     try {
       console.log('Fetching stats with date range:', dateRange);
-      const { data, error } = await supabase
+      
+      // Fetch daily stats
+      const { data: dailyStats, error: dailyStatsError } = await supabase
         .from('daily_stats')
         .select('*')
         .eq('team_lead_id', selectedTeamLead)
@@ -98,10 +97,36 @@ const Index = () => {
         .lte('date', dateRange.endDate)
         .order('date', { ascending: false });
 
-      if (error) throw error;
+      if (dailyStatsError) throw dailyStatsError;
 
-      console.log('Fetched stats:', data);
-      setStats(data || []);
+      // Fetch survey tickets for the same period
+      const { data: surveyTickets, error: surveyError } = await supabase
+        .from('After Call Survey Tickets')
+        .select('*')
+        .eq('team_lead_id', selectedTeamLead)
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate);
+
+      if (surveyError) throw surveyError;
+
+      // Combine the daily stats with survey tickets
+      const combinedStats = dailyStats.map(stat => {
+        const surveyTicketsForDate = surveyTickets.filter(
+          ticket => ticket.date === stat.date
+        );
+        const totalSurveyTickets = surveyTicketsForDate.reduce(
+          (sum, ticket) => sum + (ticket.ticket_count || 0), 
+          0
+        );
+        
+        return {
+          ...stat,
+          survey_tickets: totalSurveyTickets
+        };
+      });
+
+      console.log('Fetched stats:', combinedStats);
+      setStats(combinedStats || []);
     } catch (error) {
       console.error('Error fetching stats:', error);
       toast({
