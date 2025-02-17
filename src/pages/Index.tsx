@@ -88,6 +88,14 @@ const Index = () => {
     try {
       console.log('Fetching stats with date range:', dateRange);
       
+      // First, get all unique dates in the range
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      const dateArray = [];
+      for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+        dateArray.push(format(date, 'yyyy-MM-dd'));
+      }
+
       // Fetch daily stats
       const { data: dailyStats, error: dailyStatsError } = await supabase
         .from('daily_stats')
@@ -98,8 +106,9 @@ const Index = () => {
         .order('date', { ascending: false });
 
       if (dailyStatsError) throw dailyStatsError;
+      console.log('Daily stats:', dailyStats);
 
-      // Fetch survey tickets for the same period
+      // Fetch survey tickets
       const { data: surveyTickets, error: surveyError } = await supabase
         .from('After Call Survey Tickets')
         .select('*')
@@ -108,25 +117,38 @@ const Index = () => {
         .lte('date', dateRange.endDate);
 
       if (surveyError) throw surveyError;
+      console.log('Survey tickets:', surveyTickets);
 
-      // Combine the daily stats with survey tickets
-      const combinedStats = dailyStats.map(stat => {
-        const surveyTicketsForDate = surveyTickets.filter(
-          ticket => ticket.date === stat.date
-        );
-        const totalSurveyTickets = surveyTicketsForDate.reduce(
-          (sum, ticket) => sum + (ticket.ticket_count || 0), 
-          0
-        );
-        
+      // Create a map of dates to survey ticket counts
+      const surveyTicketMap = surveyTickets?.reduce((acc: { [key: string]: number }, ticket) => {
+        acc[ticket.date] = (acc[ticket.date] || 0) + (ticket.ticket_count || 0);
+        return acc;
+      }, {});
+
+      // Create or update stats for each date
+      const combinedStats = dateArray.map(date => {
+        const existingStat = dailyStats?.find(stat => stat.date === date) || {
+          id: `temp-${date}`,
+          team_lead_id: selectedTeamLead,
+          date: date,
+          calls: 0,
+          emails: 0,
+          live_chat: 0,
+          escalations: 0,
+          qa_assessments: 0,
+          survey_tickets: 0,
+          created_at: new Date().toISOString(),
+          sla_percentage: 0
+        };
+
         return {
-          ...stat,
-          survey_tickets: totalSurveyTickets
+          ...existingStat,
+          survey_tickets: surveyTicketMap[date] || 0
         };
       });
 
-      console.log('Fetched stats:', combinedStats);
-      setStats(combinedStats || []);
+      console.log('Combined stats:', combinedStats);
+      setStats(combinedStats);
     } catch (error) {
       console.error('Error fetching stats:', error);
       toast({
