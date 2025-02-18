@@ -18,12 +18,12 @@ export const TeamOverviewHeader = () => {
         onClick={() => navigate('/team-lead-dashboard')}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Dashboard
+        TL Portal
       </Button>
       <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">
-        Team Overview
+        Team Lead Dashboard
       </h1>
-      <p className="text-muted-foreground mt-2">Overall performance metrics for all teams</p>
+      <p className="text-muted-foreground mt-2">Track and analyze your team's performance metrics</p>
     </div>
   );
 };
