@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,6 @@ import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
 import { DateFilter } from "@/components/dashboard/DateFilter";
 import { TeamOverviewHeader } from "@/components/dashboard/TeamOverviewHeader";
-import { FileHandlers } from "@/components/dashboard/FileHandlers";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
@@ -20,7 +18,6 @@ const TeamOverview = () => {
   });
 
   useEffect(() => {
-    // Subscribe to real-time changes
     const channel = supabase
       .channel('daily-stats-changes')
       .on(
@@ -32,7 +29,6 @@ const TeamOverview = () => {
         },
         (payload) => {
           console.log('Real-time update received:', payload);
-          // Only refresh if the changed record's date is within our date range
           const changeDate = (payload.new as any).date;
           if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
             fetchOverview();
@@ -45,7 +41,7 @@ const TeamOverview = () => {
       )
       .subscribe();
 
-    fetchOverview(); // Initial fetch when dateRange changes
+    fetchOverview();
 
     return () => {
       supabase.removeChannel(channel);
@@ -56,7 +52,6 @@ const TeamOverview = () => {
     try {
       console.log('Fetching overview with date range:', dateRange);
       
-      // First, fetch daily stats with team lead names
       const { data: dailyStats, error: dailyStatsError } = await supabase
         .from('daily_stats')
         .select(`
@@ -77,7 +72,6 @@ const TeamOverview = () => {
 
       if (dailyStatsError) throw dailyStatsError;
 
-      // Then, fetch survey tickets for the same date range
       const { data: surveyTickets, error: surveyError } = await supabase
         .from('After Call Survey Tickets')
         .select('*')
@@ -89,13 +83,11 @@ const TeamOverview = () => {
       console.log('Fetched daily stats:', dailyStats);
       console.log('Fetched survey tickets:', surveyTickets);
 
-      // Create a map of team lead ID to survey ticket counts
       const surveyTicketMap = surveyTickets.reduce((acc: { [key: string]: number }, curr) => {
         acc[curr.team_lead_id] = (acc[curr.team_lead_id] || 0) + (curr.ticket_count || 0);
         return acc;
       }, {});
 
-      // Transform daily stats into overview format, including survey tickets
       const overview = dailyStats.reduce((acc: { [key: string]: any }, curr) => {
         const name = curr.team_leads?.name;
         const teamLeadId = curr.team_lead_id;
@@ -145,10 +137,7 @@ const TeamOverview = () => {
   return (
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <TeamOverviewHeader />
-          <FileHandlers data={overview} />
-        </div>
+        <TeamOverviewHeader />
 
         <Card className="p-6">
           <DateFilter
