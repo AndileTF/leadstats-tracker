@@ -15,7 +15,7 @@ export const TeamOverviewHeader = () => {
       <Button 
         variant="ghost" 
         className="mb-4"
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/team-lead-dashboard')}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Dashboard
