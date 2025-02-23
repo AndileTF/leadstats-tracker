@@ -186,7 +186,7 @@ const Index = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate('/team-overview')}
+              onClick={() => navigate('/')}
               className="bg-primary/20 hover:bg-primary/30 text-primary"
             >
               Team Overview
