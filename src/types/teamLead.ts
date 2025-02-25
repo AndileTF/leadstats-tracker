@@ -15,11 +15,13 @@ export interface DailyStats {
   escalations: number | null;
   qa_assessments: number | null;
   survey_tickets: number | null;
+  sla_percentage?: number | null;
   created_at: string;
 }
 
 export interface TeamLeadOverview {
   name: string | null;
+  team_lead_id: string;
   total_days: number | null;
   total_calls: number | null;
   total_emails: number | null;
@@ -27,6 +29,7 @@ export interface TeamLeadOverview {
   total_escalations: number | null;
   total_qa_assessments: number | null;
   total_survey_tickets: number | null;
+  average_sla?: number | null;
 }
 
 export interface DateRange {

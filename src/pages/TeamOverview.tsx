@@ -248,4 +248,57 @@ const TeamOverview = () => {
                 </div>
                 
                 <PerformanceChart data={overview} />
-                <Performance
+                <PerformanceTable data={overview} />
+                <TeamNetworkGraph data={overview} />
+              </TabsContent>
+              
+              <TabsContent value="detailed" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <PieChart 
+                    data={overview} 
+                    metric="total_calls" 
+                    title="Distribution of Calls" 
+                  />
+                  <PieChart 
+                    data={overview} 
+                    metric="total_emails" 
+                    title="Distribution of Emails" 
+                  />
+                </div>
+                
+                {teamLeads.length > 0 && (
+                  <div className="mt-6">
+                    <div className="flex gap-4 mb-4">
+                      <select 
+                        className="border rounded px-3 py-2"
+                        value={selectedTeamLead || ''}
+                        onChange={(e) => setSelectedTeamLead(e.target.value)}
+                      >
+                        {teamLeads.map(tl => (
+                          <option key={tl.id} value={tl.id}>{tl.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {selectedTeamLead && (
+                      <>
+                        <LineChart 
+                          data={getTeamLeadStats()} 
+                          teamLeadName={getTeamLeadName()}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
+                
+                <HeatmapChart data={dailyStats} teamLeads={teamLeads} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default TeamOverview;
