@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,7 +207,11 @@ const TeamOverview = () => {
               
               <TabsContent value="overview" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <GaugeChart data={overview} title="Average SLA Performance" description="Team average service level agreement performance" />
+                  <GaugeChart 
+                    data={overview} 
+                    title="Issues Per Agent Per Day" 
+                    description="Daily target performance for customer support issues"
+                  />
                   <BarChartComparison data={overview} />
                 </div>
                 
@@ -217,21 +222,42 @@ const TeamOverview = () => {
               
               <TabsContent value="detailed" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <PieChart data={overview} metric="total_calls" title="Distribution of Calls" />
-                  <PieChart data={overview} metric="total_emails" title="Distribution of Emails" />
+                  <PieChart 
+                    data={overview} 
+                    metric="total_calls" 
+                    title="Distribution of Calls" 
+                  />
+                  <PieChart 
+                    data={overview} 
+                    metric="total_emails" 
+                    title="Distribution of Emails" 
+                  />
                 </div>
                 
-                {teamLeads.length > 0 && <div className="mt-6">
+                {teamLeads.length > 0 && (
+                  <div className="mt-6">
                     <div className="flex gap-4 mb-4">
-                      <select value={selectedTeamLead || ''} onChange={e => setSelectedTeamLead(e.target.value)} className="border rounded px-3 py-2 bg-slate-900">
-                        {teamLeads.map(tl => <option key={tl.id} value={tl.id}>{tl.name}</option>)}
+                      <select 
+                        value={selectedTeamLead || ''}
+                        onChange={(e) => setSelectedTeamLead(e.target.value)}
+                        className="border rounded px-3 py-2 bg-slate-900"
+                      >
+                        {teamLeads.map(tl => (
+                          <option key={tl.id} value={tl.id}>{tl.name}</option>
+                        ))}
                       </select>
                     </div>
                     
-                    {selectedTeamLead && <>
-                        <LineChart data={getTeamLeadStats()} teamLeadName={getTeamLeadName()} />
-                      </>}
-                  </div>}
+                    {selectedTeamLead && (
+                      <>
+                        <LineChart 
+                          data={getTeamLeadStats()} 
+                          teamLeadName={getTeamLeadName()}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
                 
                 <HeatmapChart data={dailyStats} teamLeads={teamLeads} />
               </TabsContent>
