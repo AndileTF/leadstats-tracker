@@ -2,9 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateRange } from "@/types/teamLead";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CalendarDays } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 
 interface DateFilterProps {
   dateRange: DateRange;
@@ -17,38 +16,8 @@ export const DateFilter = ({
 }: DateFilterProps) => {
   const [tempRange, setTempRange] = useState<DateRange>(dateRange);
 
-  // Update tempRange when dateRange prop changes
-  useEffect(() => {
-    setTempRange(dateRange);
-  }, [dateRange]);
-
   const handleApplyFilter = () => {
-    // Validate date range
-    if (!tempRange.startDate || !tempRange.endDate) {
-      toast({
-        title: "Error",
-        description: "Please select both start and end dates",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate that start date is not after end date
-    if (tempRange.startDate > tempRange.endDate) {
-      toast({
-        title: "Error",
-        description: "Start date cannot be after end date",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log("Applying date filter:", tempRange);
     setDateRange(tempRange);
-    toast({
-      title: "Filters Applied",
-      description: `Date range: ${tempRange.startDate} to ${tempRange.endDate}`,
-    });
   };
 
   return (
