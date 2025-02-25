@@ -87,12 +87,13 @@ const Index = () => {
 
     try {
       console.log('Fetching stats with date range:', dateRange);
+      setIsLoading(true);
       
       // First, get all unique dates in the range
       const startDate = new Date(dateRange.startDate);
       const endDate = new Date(dateRange.endDate);
       const dateArray = [];
-      for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
         dateArray.push(format(date, 'yyyy-MM-dd'));
       }
 
@@ -143,7 +144,7 @@ const Index = () => {
 
         return {
           ...existingStat,
-          survey_tickets: surveyTicketMap[date] || 0
+          survey_tickets: surveyTicketMap?.[date] || 0
         };
       });
 
@@ -156,6 +157,8 @@ const Index = () => {
         description: "Failed to fetch stats",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
