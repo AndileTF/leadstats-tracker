@@ -14,6 +14,7 @@ import { PieChart } from "@/components/dashboard/PieChart";
 import { BarChartComparison } from "@/components/dashboard/BarChartComparison";
 import { HeatmapChart } from "@/components/dashboard/HeatmapChart";
 import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
+import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TeamOverview = () => {

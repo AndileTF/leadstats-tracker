@@ -1,15 +1,12 @@
 
-import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TeamLeadOverview } from "@/types/teamLead";
-import { Sigma, RandomizeNodePositions, RelativeSize } from 'react-sigma';
 
 interface TeamNetworkGraphProps {
   data: TeamLeadOverview[];
 }
 
-// Fallback component for when we can't render a proper network graph
-const NetworkGraphFallback = ({ data }: TeamNetworkGraphProps) => {
+export const TeamNetworkGraph = ({ data }: TeamNetworkGraphProps) => {
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -19,7 +16,7 @@ const NetworkGraphFallback = ({ data }: TeamNetworkGraphProps) => {
         <div className="flex flex-wrap gap-4 justify-center items-center min-h-[300px]">
           {data.map((team) => (
             <div 
-              key={team.name} 
+              key={team.team_lead_id} 
               className="flex flex-col items-center justify-center p-4 rounded-full border-2 border-primary/30 bg-primary/5"
               style={{
                 width: `${Math.max(80, Math.min(160, 80 + (team.total_calls || 0) / 10))}px`,
@@ -34,10 +31,4 @@ const NetworkGraphFallback = ({ data }: TeamNetworkGraphProps) => {
       </CardContent>
     </Card>
   );
-};
-
-export const TeamNetworkGraph = ({ data }: TeamNetworkGraphProps) => {
-  // Since react-sigma is not actually available in our dependencies,
-  // we'll render a simpler fallback representation of the team network
-  return <NetworkGraphFallback data={data} />;
 };
