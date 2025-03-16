@@ -1,12 +1,14 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TeamLead, DailyStats } from "@/types/teamLead";
+import { TeamLead, DailyStats, Agent } from "@/types/teamLead";
 import { StatForm } from "@/components/StatForm";
 import { StatsGrid } from "./StatsGrid";
 import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { AgentsList } from "./AgentsList";
 
 interface TeamLeadTabsProps {
   teamLeads: TeamLead[];
@@ -26,6 +28,8 @@ export const TeamLeadTabs = ({
   fetchStats
 }: TeamLeadTabsProps) => {
   const [selectedTab, setSelectedTab] = useState<string>(selectedTeamLead || "");
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
 
   // Update the selected tab when selectedTeamLead changes from parent
   useEffect(() => {
@@ -35,6 +39,52 @@ export const TeamLeadTabs = ({
       setSelectedTab(teamLeads[0].id);
     }
   }, [selectedTeamLead, teamLeads]);
+
+  // Fetch agents when the selected tab changes
+  useEffect(() => {
+    if (!selectedTab) return;
+    
+    fetchAgents(selectedTab);
+    
+    // Set up subscription for real-time updates
+    const channel = supabase
+      .channel('agents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agents',
+          filter: `team_lead_id=eq.${selectedTab}`
+        },
+        () => {
+          fetchAgents(selectedTab);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedTab]);
+
+  const fetchAgents = async (teamLeadId: string) => {
+    try {
+      setIsLoadingAgents(true);
+      const { data, error } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      setAgents(data || []);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    } finally {
+      setIsLoadingAgents(false);
+    }
+  };
 
   const calculateTotalStats = () => {
     return stats.reduce((acc, curr) => ({
@@ -105,6 +155,11 @@ export const TeamLeadTabs = ({
           {/* Only render LineChart if we're on the selected team lead's tab */}
           {selectedTab === teamLead.id && stats.length > 0 && (
             <LineChart data={stats} teamLeadName={teamLead.name} />
+          )}
+
+          {/* Display agents list */}
+          {selectedTab === teamLead.id && (
+            <AgentsList agents={agents} isLoading={isLoadingAgents} />
           )}
 
           <StatsGrid totalStats={totalStats} statsCount={statsCount} />

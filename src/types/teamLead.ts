@@ -1,3 +1,4 @@
+
 export interface TeamLead {
   id: string;
   name: string;
@@ -35,4 +36,13 @@ export interface TeamLeadOverview {
 export interface DateRange {
   startDate: string;
   endDate: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  team_lead_id: string;
+  group_name: string;
+  start_date: string;
+  created_at: string;
 }

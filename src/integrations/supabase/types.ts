@@ -48,6 +48,48 @@ export type Database = {
           },
         ]
       }
+      agents: {
+        Row: {
+          created_at: string
+          group_name: string
+          id: string
+          name: string
+          start_date: string
+          team_lead_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          group_name: string
+          id?: string
+          name: string
+          start_date?: string
+          team_lead_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          group_name?: string
+          id?: string
+          name?: string
+          start_date?: string
+          team_lead_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agents_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_metrics"
+            referencedColumns: ["team_lead_id"]
+          },
+        ]
+      }
       Calls: {
         Row: {
           call_count: number | null
