@@ -5,6 +5,8 @@ import { StatForm } from "@/components/StatForm";
 import { StatsGrid } from "./StatsGrid";
 import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
+import { Badge } from "@/components/ui/badge";
+import { Users } from "lucide-react";
 
 interface TeamLeadTabsProps {
   teamLeads: TeamLead[];
@@ -74,14 +76,28 @@ export const TeamLeadTabs = ({
           <TabsTrigger
             key={teamLead.id}
             value={teamLead.id}
+            className="flex items-center gap-2"
           >
-            {teamLead.name}
+            <span>{teamLead.name}</span>
+            {teamLead.assigned_agents_count !== undefined && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                <span>{teamLead.assigned_agents_count}</span>
+              </Badge>
+            )}
           </TabsTrigger>
         ))}
       </TabsList>
 
       {teamLeads.map((teamLead) => (
         <TabsContent key={teamLead.id} value={teamLead.id}>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>Agents Assigned: <strong>{teamLead.assigned_agents_count || 0}</strong></span>
+            </div>
+          </div>
+
           {showForm && selectedTeamLead === teamLead.id && (
             <StatForm teamLeadId={teamLead.id} onSuccess={fetchStats} />
           )}

@@ -1,8 +1,8 @@
-
 export interface TeamLead {
   id: string;
   name: string;
   created_at: string;
+  assigned_agents_count?: number;
 }
 
 export interface DailyStats {

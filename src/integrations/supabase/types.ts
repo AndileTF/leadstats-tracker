@@ -287,16 +287,19 @@ export type Database = {
       }
       team_leads: {
         Row: {
+          assigned_agents_count: number | null
           created_at: string
           id: string
           name: string
         }
         Insert: {
+          assigned_agents_count?: number | null
           created_at?: string
           id?: string
           name: string
         }
         Update: {
+          assigned_agents_count?: number | null
           created_at?: string
           id?: string
           name?: string
