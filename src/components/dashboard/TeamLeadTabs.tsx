@@ -159,7 +159,12 @@ export const TeamLeadTabs = ({
 
           {/* Display agents list */}
           {selectedTab === teamLead.id && (
-            <AgentsList agents={agents} isLoading={isLoadingAgents} />
+            <AgentsList 
+              agents={agents} 
+              isLoading={isLoadingAgents} 
+              teamLeadId={teamLead.id}
+              onAgentUpdated={() => fetchAgents(teamLead.id)}
+            />
           )}
 
           <StatsGrid totalStats={totalStats} statsCount={statsCount} />
