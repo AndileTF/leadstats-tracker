@@ -157,6 +157,9 @@ export const TeamLeadTabs = ({
             <LineChart data={stats} teamLeadName={teamLead.name} />
           )}
 
+          {/* Stats Grid moved above Agents List */}
+          <StatsGrid totalStats={totalStats} statsCount={statsCount} />
+
           {/* Display agents list */}
           {selectedTab === teamLead.id && (
             <AgentsList 
@@ -166,8 +169,6 @@ export const TeamLeadTabs = ({
               onAgentUpdated={() => fetchAgents(teamLead.id)}
             />
           )}
-
-          <StatsGrid totalStats={totalStats} statsCount={statsCount} />
         </TabsContent>
       ))}
     </Tabs>
