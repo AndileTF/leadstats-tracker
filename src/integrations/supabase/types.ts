@@ -50,27 +50,27 @@ export type Database = {
       }
       agents: {
         Row: {
-          created_at: string
-          group_name: string
+          created_at: string | null
+          group_name: string | null
           id: string
           name: string
-          start_date: string
+          start_date: string | null
           team_lead_id: string | null
         }
         Insert: {
-          created_at?: string
-          group_name: string
+          created_at?: string | null
+          group_name?: string | null
           id?: string
           name: string
-          start_date?: string
+          start_date?: string | null
           team_lead_id?: string | null
         }
         Update: {
-          created_at?: string
-          group_name?: string
+          created_at?: string | null
+          group_name?: string | null
           id?: string
           name?: string
-          start_date?: string
+          start_date?: string | null
           team_lead_id?: string | null
         }
         Relationships: [
