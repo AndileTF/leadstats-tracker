@@ -1,12 +1,10 @@
 
 import { useState } from "react";
 import { Agent } from "@/types/teamLead";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AgentForm } from "./AgentForm";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { 
   Table, 
   TableBody, 
@@ -17,14 +15,9 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { User, Users, Calendar, Edit, Trash2, UserPlus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DeleteAgentDialog } from "./DeleteAgentDialog";
+import { EmptyAgentsList } from "./EmptyAgentsList";
+import { getTenureText, getGroupBadgeColor } from "./agentUtils";
 
 interface AgentsListProps {
   agents: Agent[];
@@ -37,90 +30,6 @@ export const AgentsList = ({ agents, isLoading, teamLeadId, onAgentUpdated }: Ag
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [deletingAgent, setDeletingAgent] = useState<Agent | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    if (!deletingAgent) return;
-    
-    try {
-      setIsDeleting(true);
-      
-      // Delete the agent
-      const { error } = await supabase
-        .from("agents")
-        .delete()
-        .eq("id", deletingAgent.id);
-      
-      if (error) throw error;
-      
-      // Update team lead's agent count
-      await supabase
-        .from("team_leads")
-        .update({
-          assigned_agents_count: await getAgentCount()
-        })
-        .eq("id", teamLeadId);
-      
-      toast({
-        title: "Agent Removed",
-        description: `Successfully removed ${deletingAgent.name}`,
-      });
-      
-      onAgentUpdated();
-    } catch (error) {
-      console.error("Error deleting agent:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove agent",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setDeletingAgent(null);
-    }
-  };
-  
-  const getAgentCount = async (): Promise<number> => {
-    const { count, error } = await supabase
-      .from("agents")
-      .select("*", { count: "exact", head: true })
-      .eq("team_lead_id", teamLeadId);
-      
-    if (error) {
-      console.error("Error getting agent count:", error);
-      return 0;
-    }
-    
-    return count || 0;
-  };
-
-  const getTenureText = (startDate: string) => {
-    const days = differenceInDays(new Date(), new Date(startDate));
-    
-    if (days < 30) {
-      return `${days} days`;
-    } else if (days < 365) {
-      const months = Math.floor(days / 30);
-      return `${months} month${months > 1 ? 's' : ''}`;
-    } else {
-      const years = Math.floor(days / 365);
-      const remainingMonths = Math.floor((days % 365) / 30);
-      return `${years} year${years > 1 ? 's' : ''}${remainingMonths > 0 ? `, ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}` : ''}`;
-    }
-  };
-
-  const getGroupBadgeColor = (group: string) => {
-    switch (group) {
-      case 'Technical Support':
-        return 'bg-blue-100 text-blue-800';
-      case 'Sales':
-        return 'bg-green-100 text-green-800';
-      case 'Billing':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   if (isLoading) {
     return <div className="py-4">Loading agents...</div>;
@@ -196,22 +105,10 @@ export const AgentsList = ({ agents, isLoading, teamLeadId, onAgentUpdated }: Ag
           </Table>
         </div>
       ) : (
-        <div className="py-4 text-center text-muted-foreground rounded-md border p-8">
-          <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No agents assigned to this team lead</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-4"
-            onClick={() => setShowAddForm(true)}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add your first agent
-          </Button>
-        </div>
+        <EmptyAgentsList onAddClick={() => setShowAddForm(true)} />
       )}
       
-      {/* Add/Edit Agent Form */}
+      {/* Add Agent Form */}
       {showAddForm && (
         <AgentForm
           isOpen={showAddForm}
@@ -233,32 +130,12 @@ export const AgentsList = ({ agents, isLoading, teamLeadId, onAgentUpdated }: Ag
       )}
       
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deletingAgent} onOpenChange={(open) => !open && setDeletingAgent(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to remove {deletingAgent?.name}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeletingAgent(null)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteAgentDialog
+        agent={deletingAgent}
+        teamLeadId={teamLeadId}
+        onClose={() => setDeletingAgent(null)}
+        onAgentUpdated={onAgentUpdated}
+      />
     </div>
   );
 };
