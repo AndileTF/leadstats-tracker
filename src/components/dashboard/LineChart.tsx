@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,129 @@ type TimeRange = 'daily' | 'weekly' | 'monthly';
 export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
   const [visibleMetrics, setVisibleMetrics] = useState(METRICS.map(m => m.key));
   const [timeRange, setTimeRange] = useState<TimeRange>('daily');
+  const [processedData, setProcessedData] = useState<any[]>([]);
+
+  // Process data whenever time range changes or data updates
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+
+    // Sort data by date in ascending order to ensure correct accumulation
+    const sortedData = [...data].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    let formattedData;
+    
+    if (timeRange === 'daily') {
+      // For daily view, just use the sorted data with totals calculated
+      formattedData = sortedData.map(stat => ({
+        date: stat.date,
+        calls: stat.calls || 0,
+        emails: stat.emails || 0,
+        live_chat: stat.live_chat || 0,
+        escalations: stat.escalations || 0,
+        qa_assessments: stat.qa_assessments || 0,
+        survey_tickets: stat.survey_tickets || 0,
+        total: (stat.calls || 0) + (stat.emails || 0) + (stat.live_chat || 0) + 
+               (stat.escalations || 0) + (stat.qa_assessments || 0) + (stat.survey_tickets || 0)
+      }));
+    } 
+    else if (timeRange === 'weekly') {
+      // Group by week and accumulate values
+      const weeklyData: Record<string, any> = {};
+      
+      sortedData.forEach((stat, index) => {
+        // Use the week's start date as the key (simplification: use the date as is)
+        const weekKey = stat.date;
+        
+        if (!weeklyData[weekKey]) {
+          weeklyData[weekKey] = {
+            date: weekKey,
+            calls: 0,
+            emails: 0,
+            live_chat: 0,
+            escalations: 0,
+            qa_assessments: 0,
+            survey_tickets: 0,
+            total: 0
+          };
+        }
+        
+        // Add a rolling 7-day total for each date
+        const last7Days = sortedData.slice(Math.max(0, index - 6), index + 1);
+        
+        weeklyData[weekKey] = {
+          date: weekKey,
+          calls: last7Days.reduce((sum, d) => sum + (d.calls || 0), 0),
+          emails: last7Days.reduce((sum, d) => sum + (d.emails || 0), 0),
+          live_chat: last7Days.reduce((sum, d) => sum + (d.live_chat || 0), 0),
+          escalations: last7Days.reduce((sum, d) => sum + (d.escalations || 0), 0),
+          qa_assessments: last7Days.reduce((sum, d) => sum + (d.qa_assessments || 0), 0),
+          survey_tickets: last7Days.reduce((sum, d) => sum + (d.survey_tickets || 0), 0),
+        };
+        
+        weeklyData[weekKey].total = 
+          weeklyData[weekKey].calls + 
+          weeklyData[weekKey].emails + 
+          weeklyData[weekKey].live_chat + 
+          weeklyData[weekKey].escalations + 
+          weeklyData[weekKey].qa_assessments + 
+          weeklyData[weekKey].survey_tickets;
+      });
+      
+      formattedData = Object.values(weeklyData);
+    } 
+    else if (timeRange === 'monthly') {
+      // Group by month and accumulate values
+      const monthlyData: Record<string, any> = {};
+      
+      sortedData.forEach((stat, index) => {
+        // Use the month's start date as the key
+        const monthKey = stat.date;
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = {
+            date: monthKey,
+            calls: 0,
+            emails: 0,
+            live_chat: 0,
+            escalations: 0,
+            qa_assessments: 0,
+            survey_tickets: 0,
+            total: 0
+          };
+        }
+        
+        // Add a rolling 30-day total for each date
+        const last30Days = sortedData.slice(Math.max(0, index - 29), index + 1);
+        
+        monthlyData[monthKey] = {
+          date: monthKey,
+          calls: last30Days.reduce((sum, d) => sum + (d.calls || 0), 0),
+          emails: last30Days.reduce((sum, d) => sum + (d.emails || 0), 0),
+          live_chat: last30Days.reduce((sum, d) => sum + (d.live_chat || 0), 0),
+          escalations: last30Days.reduce((sum, d) => sum + (d.escalations || 0), 0),
+          qa_assessments: last30Days.reduce((sum, d) => sum + (d.qa_assessments || 0), 0),
+          survey_tickets: last30Days.reduce((sum, d) => sum + (d.survey_tickets || 0), 0),
+        };
+        
+        monthlyData[monthKey].total = 
+          monthlyData[monthKey].calls + 
+          monthlyData[monthKey].emails + 
+          monthlyData[monthKey].live_chat + 
+          monthlyData[monthKey].escalations + 
+          monthlyData[monthKey].qa_assessments + 
+          monthlyData[monthKey].survey_tickets;
+      });
+      
+      formattedData = Object.values(monthlyData);
+    }
+
+    // Sort the processed data by date in descending order for display
+    setProcessedData(formattedData.sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    ));
+  }, [data, timeRange]);
 
   const toggleMetric = (metric: string) => {
     if (visibleMetrics.includes(metric)) {
@@ -42,41 +165,15 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
     }
   };
 
-  const formattedData = data.map(stat => ({
-    date: stat.date,
-    calls: stat.calls || 0,
-    emails: stat.emails || 0,
-    live_chat: stat.live_chat || 0,
-    escalations: stat.escalations || 0,
-    qa_assessments: stat.qa_assessments || 0,
-    survey_tickets: stat.survey_tickets || 0,
-    // Add total for reference line comparison
-    total: (stat.calls || 0) + (stat.emails || 0) + (stat.live_chat || 0) + 
-           (stat.escalations || 0) + (stat.qa_assessments || 0) + (stat.survey_tickets || 0)
-  }));
-
   // Get the current target based on selected time range
   const currentTarget = TARGETS[timeRange];
 
   // Calculate if the team lead is meeting targets
   const isTargetMet = () => {
-    if (formattedData.length === 0) return false;
+    if (processedData.length === 0) return false;
     
-    if (timeRange === 'daily') {
-      // Check if the most recent day meets the target
-      return formattedData[0].total >= currentTarget;
-    } else if (timeRange === 'weekly') {
-      // Sum the 7 most recent days or all days if less than 7
-      const daysToSum = Math.min(7, formattedData.length);
-      const weeklySum = formattedData.slice(0, daysToSum).reduce((sum, day) => sum + day.total, 0);
-      return weeklySum >= currentTarget;
-    } else if (timeRange === 'monthly') {
-      // Sum the 30 most recent days or all days if less than 30
-      const daysToSum = Math.min(30, formattedData.length);
-      const monthlySum = formattedData.slice(0, daysToSum).reduce((sum, day) => sum + day.total, 0);
-      return monthlySum >= currentTarget;
-    }
-    return false;
+    // Check the most recent data point against the target
+    return processedData[0].total >= currentTarget;
   };
 
   const targetMet = isTargetMet();
@@ -128,7 +225,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <RechartsLineChart data={formattedData}>
+          <RechartsLineChart data={processedData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -156,7 +253,11 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
             {/* Add reference line for current target */}
             <ReferenceLine 
               y={currentTarget} 
-              label={`${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)} Target`} 
+              label={{
+                value: `${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)} Target: ${currentTarget}`,
+                position: 'insideTopRight',
+                fill: 'red'
+              }}
               stroke="red" 
               strokeDasharray="3 3" 
             />
@@ -172,8 +273,6 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
                 />
               )
             ))}
-            {/* Add a line for total if needed */}
-            {/* <Line type="monotone" dataKey="total" stroke="#000" name="Total" dot={false} /> */}
           </RechartsLineChart>
         </ResponsiveContainer>
       </CardContent>

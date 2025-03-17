@@ -52,27 +52,30 @@ export const DateFilter = ({
   };
 
   return (
-    <div className="flex items-center gap-4 bg-muted/50 p-2 rounded-lg">
-      <CalendarDays className="h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-muted/50 p-4 rounded-lg">
       <div className="flex items-center gap-2">
+        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Date Range:</span>
+      </div>
+      <div className="flex items-center gap-2 w-full sm:w-auto">
         <Input
           type="date"
           value={tempRange.startDate}
           onChange={(e) => setTempRange({ ...tempRange, startDate: e.target.value })}
-          className="w-40"
+          className="w-full sm:w-40"
         />
         <span className="text-sm text-muted-foreground">to</span>
         <Input
           type="date"
           value={tempRange.endDate}
           onChange={(e) => setTempRange({ ...tempRange, endDate: e.target.value })}
-          className="w-40"
+          className="w-full sm:w-40"
         />
       </div>
       <Button 
         onClick={handleApplyFilter}
         size="sm"
-        className="bg-primary/20 hover:bg-primary/30 text-primary"
+        className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
       >
         Apply Filter
       </Button>
