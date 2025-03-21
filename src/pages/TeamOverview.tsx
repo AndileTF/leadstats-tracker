@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +15,7 @@ import { HeatmapChart } from "@/components/dashboard/HeatmapChart";
 import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
 import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,30 +26,105 @@ const TeamOverview = () => {
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
+  
   useEffect(() => {
-    const channel = supabase.channel('daily-stats-changes').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'daily_stats'
-    }, payload => {
-      console.log('Real-time update received:', payload);
-      const changeDate = (payload.new as any).date;
-      if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-        fetchOverview();
-        fetchDailyStats();
-        toast({
-          title: "Data Updated",
-          description: "Dashboard data has been refreshed"
-        });
-      }
-    }).subscribe();
+    const dailyStatsChannel = supabase
+      .channel('overview-daily-stats-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_stats'
+        },
+        (payload) => {
+          console.log('Real-time update received for daily_stats:', payload);
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchOverview();
+            fetchDailyStats();
+            toast({
+              title: "Data Updated",
+              description: "Dashboard data has been refreshed"
+            });
+          }
+        }
+      )
+      .subscribe();
+      
+    const surveyTicketsChannel = supabase
+      .channel('overview-survey-tickets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'After Call Survey Tickets'
+        },
+        (payload) => {
+          console.log('Real-time update received for survey tickets:', payload);
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchOverview();
+            fetchDailyStats();
+            toast({
+              title: "Survey Data Updated",
+              description: "Survey data has been refreshed"
+            });
+          }
+        }
+      )
+      .subscribe();
+      
+    const teamLeadsChannel = supabase
+      .channel('overview-team-leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_leads'
+        },
+        (payload) => {
+          console.log('Real-time update received for team_leads:', payload);
+          fetchTeamLeads();
+          fetchOverview();
+          toast({
+            title: "Team Leads Updated",
+            description: "Team leads data has been refreshed"
+          });
+        }
+      )
+      .subscribe();
+      
+    const agentsChannel = supabase
+      .channel('overview-agents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agents'
+        },
+        (payload) => {
+          console.log('Real-time update received for agents:', payload);
+          fetchTeamLeads();
+        }
+      )
+      .subscribe();
+      
     fetchTeamLeads();
     fetchOverview();
     fetchDailyStats();
+    
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(dailyStatsChannel);
+      supabase.removeChannel(surveyTicketsChannel);
+      supabase.removeChannel(teamLeadsChannel);
+      supabase.removeChannel(agentsChannel);
     };
   }, [dateRange]);
+
   const fetchTeamLeads = async () => {
     try {
       const {
@@ -70,6 +145,7 @@ const TeamOverview = () => {
       });
     }
   };
+
   const fetchOverview = async () => {
     try {
       console.log('Fetching overview with date range:', dateRange);
@@ -139,7 +215,6 @@ const TeamOverview = () => {
         return acc;
       }, {});
 
-      // Calculate actual average SLA
       Object.values(overview).forEach((item: any) => {
         if (item.sla_days > 0) {
           item.average_sla = item.average_sla / item.sla_days;
@@ -157,6 +232,7 @@ const TeamOverview = () => {
       setIsLoading(false);
     }
   };
+
   const fetchDailyStats = async () => {
     try {
       const {
@@ -177,21 +253,22 @@ const TeamOverview = () => {
     }
   };
 
-  // Get stats for the selected team lead
   const getTeamLeadStats = () => {
     if (!selectedTeamLead) return [];
     return dailyStats.filter(stat => stat.team_lead_id === selectedTeamLead);
   };
 
-  // Find team lead name
   const getTeamLeadName = () => {
     const teamLead = teamLeads.find(tl => tl.id === selectedTeamLead);
     return teamLead?.name || 'Unknown';
   };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-  return <div className="min-h-screen p-6 animate-fade-in">
+
+  return (
+    <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-8">
         <TeamOverviewHeader />
 
@@ -265,6 +342,8 @@ const TeamOverview = () => {
           </CardContent>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default TeamOverview;

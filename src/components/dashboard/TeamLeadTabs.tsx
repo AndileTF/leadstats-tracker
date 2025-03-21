@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AgentsList } from "./AgentsList";
+import { toast } from "@/hooks/use-toast";
 
 interface TeamLeadTabsProps {
   teamLeads: TeamLead[];
@@ -46,8 +47,8 @@ export const TeamLeadTabs = ({
     
     fetchAgents(selectedTab);
     
-    // Set up subscription for real-time updates
-    const channel = supabase
+    // Set up multiple realtime subscriptions
+    const agentsChannel = supabase
       .channel('agents-changes')
       .on(
         'postgres_changes',
@@ -57,14 +58,37 @@ export const TeamLeadTabs = ({
           table: 'agents',
           filter: `team_lead_id=eq.${selectedTab}`
         },
-        () => {
+        (payload) => {
+          console.log('Agents update received:', payload);
           fetchAgents(selectedTab);
+          toast({
+            title: "Agents Updated",
+            description: "The agents list has been refreshed",
+          });
+        }
+      )
+      .subscribe();
+      
+    // Listen for team_leads changes
+    const teamLeadsChannel = supabase
+      .channel('team-leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_leads'
+        },
+        () => {
+          // Refresh the parent component's team leads data
+          console.log('Team leads update detected');
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(agentsChannel);
+      supabase.removeChannel(teamLeadsChannel);
     };
   }, [selectedTab]);
 

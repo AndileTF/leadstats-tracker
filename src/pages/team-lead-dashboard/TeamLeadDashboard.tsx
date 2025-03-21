@@ -20,13 +20,39 @@ const TeamLeadDashboard = () => {
 
   useEffect(() => {
     fetchTeamLeads();
+    
+    // Set up realtime subscription for team_leads table
+    const teamLeadsChannel = supabase
+      .channel('dashboard-team-leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_leads'
+        },
+        (payload) => {
+          console.log('Team leads update received:', payload);
+          fetchTeamLeads();
+          toast({
+            title: "Team Leads Updated",
+            description: "Team leads data has been refreshed",
+          });
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(teamLeadsChannel);
+    };
   }, []);
 
   useEffect(() => {
     if (!selectedTeamLead) return;
 
-    const channel = supabase
-      .channel('dashboard-changes')
+    // Set up multiple channels for different tables
+    const dailyStatsChannel = supabase
+      .channel('dashboard-daily-stats-changes')
       .on(
         'postgres_changes',
         {
@@ -36,7 +62,7 @@ const TeamLeadDashboard = () => {
           filter: `team_lead_id=eq.${selectedTeamLead}`
         },
         (payload) => {
-          console.log('Real-time update received:', payload);
+          console.log('Daily stats update received:', payload);
           const changeDate = (payload.new as DailyStats).date;
           if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
             fetchStats();
@@ -48,11 +74,37 @@ const TeamLeadDashboard = () => {
         }
       )
       .subscribe();
+      
+    // Set up subscription for survey tickets table
+    const surveyTicketsChannel = supabase
+      .channel('dashboard-survey-tickets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'After Call Survey Tickets',
+          filter: `team_lead_id=eq.${selectedTeamLead}`
+        },
+        (payload) => {
+          console.log('Survey tickets update received:', payload);
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchStats();
+            toast({
+              title: "Survey Data Updated",
+              description: "Survey tickets data has been refreshed",
+            });
+          }
+        }
+      )
+      .subscribe();
 
     fetchStats();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(dailyStatsChannel);
+      supabase.removeChannel(surveyTicketsChannel);
     };
   }, [selectedTeamLead, dateRange]);
 
@@ -65,7 +117,7 @@ const TeamLeadDashboard = () => {
       if (error) throw error;
 
       setTeamLeads(data);
-      if (data.length > 0) {
+      if (data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
       }
     } catch (error) {
