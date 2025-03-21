@@ -14,7 +14,7 @@ const TeamLeadDashboard = () => {
   const [stats, setStats] = useState<DailyStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: format(new Date(), 'yyyy-MM-dd'),
+    startDate: format(new Date(new Date().setDate(new Date().getDate() - 7)), 'yyyy-MM-dd'), // Default to 7 days ago
     endDate: format(new Date(), 'yyyy-MM-dd')
   });
 
@@ -126,6 +126,7 @@ const TeamLeadDashboard = () => {
         description: "Failed to fetch team leads",
         variant: "destructive",
       });
+      console.error('Error fetching team leads:', error);
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +156,10 @@ const TeamLeadDashboard = () => {
         .lte('date', dateRange.endDate)
         .order('date', { ascending: false });
 
-      if (dailyStatsError) throw dailyStatsError;
+      if (dailyStatsError) {
+        throw dailyStatsError;
+      }
+      
       console.log('Daily stats:', dailyStats);
 
       // Fetch survey tickets
@@ -166,7 +170,10 @@ const TeamLeadDashboard = () => {
         .gte('date', dateRange.startDate)
         .lte('date', dateRange.endDate);
 
-      if (surveyError) throw surveyError;
+      if (surveyError) {
+        throw surveyError;
+      }
+      
       console.log('Survey tickets:', surveyTickets);
 
       // Create a map of dates to survey ticket counts
@@ -211,7 +218,7 @@ const TeamLeadDashboard = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !stats.length) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 

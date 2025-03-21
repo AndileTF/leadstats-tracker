@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +21,7 @@ const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: format(new Date(), 'yyyy-MM-dd'),
+    startDate: format(new Date(new Date().setDate(new Date().getDate() - 7)), 'yyyy-MM-dd'), // Default to 7 days ago
     endDate: format(new Date(), 'yyyy-MM-dd')
   });
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
@@ -149,6 +150,8 @@ const TeamOverview = () => {
   const fetchOverview = async () => {
     try {
       console.log('Fetching overview with date range:', dateRange);
+      setIsLoading(true);
+      
       const {
         data: dailyStats,
         error: dailyStatsError
@@ -166,20 +169,26 @@ const TeamOverview = () => {
           team_lead_id,
           sla_percentage
         `).gte('date', dateRange.startDate).lte('date', dateRange.endDate);
+        
       if (dailyStatsError) throw dailyStatsError;
+      
       const {
         data: surveyTickets,
         error: surveyError
       } = await supabase.from('After Call Survey Tickets').select('*').gte('date', dateRange.startDate).lte('date', dateRange.endDate);
+      
       if (surveyError) throw surveyError;
+      
       console.log('Fetched daily stats:', dailyStats);
       console.log('Fetched survey tickets:', surveyTickets);
+      
       const surveyTicketMap = surveyTickets.reduce((acc: {
         [key: string]: number;
       }, curr) => {
         acc[curr.team_lead_id] = (acc[curr.team_lead_id] || 0) + (curr.ticket_count || 0);
         return acc;
       }, {});
+      
       const overview = dailyStats.reduce((acc: {
         [key: string]: any;
       }, curr) => {
@@ -220,6 +229,7 @@ const TeamOverview = () => {
           item.average_sla = item.average_sla / item.sla_days;
         }
       });
+      
       setOverview(Object.values(overview));
     } catch (error) {
       console.error('Error fetching overview:', error);
@@ -242,6 +252,7 @@ const TeamOverview = () => {
         ascending: true
       });
       if (error) throw error;
+      console.log('Fetched daily stats for charts:', data);
       setDailyStats(data);
     } catch (error) {
       console.error('Error fetching daily stats:', error);
@@ -263,7 +274,7 @@ const TeamOverview = () => {
     return teamLead?.name || 'Unknown';
   };
 
-  if (isLoading) {
+  if (isLoading && !overview.length && !dailyStats.length) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
