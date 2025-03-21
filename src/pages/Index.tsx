@@ -1,5 +1,5 @@
 
-import { useNavigate, useEffect } from 'react';
+import { useNavigate, useEffect } from 'react-router-dom';
 
 const Index = () => {
   const navigate = useNavigate();
