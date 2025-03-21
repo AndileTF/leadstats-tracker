@@ -1,19 +1,8 @@
 
-import { useNavigate, useEffect } from 'react-router-dom';
+import TeamLeadDashboard from './team-lead-dashboard/TeamLeadDashboard';
 
 const Index = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    // Redirect to team-overview page to avoid 404
-    navigate('/team-overview');
-  }, [navigate]);
-  
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p>Redirecting to team overview...</p>
-    </div>
-  );
+  return <TeamLeadDashboard />;
 };
 
 export default Index;
