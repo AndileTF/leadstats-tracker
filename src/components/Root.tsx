@@ -1,0 +1,17 @@
+
+import { Outlet } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
+
+const Root = () => {
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen">
+        <div className="flex-1">
+          <Outlet />
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default Root;
