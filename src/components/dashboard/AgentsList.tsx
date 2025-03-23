@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Agent } from "@/types/teamLead";
-import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AgentForm } from "./AgentForm";
@@ -14,10 +13,10 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { User, Users, Calendar, Edit, Trash2, UserPlus } from "lucide-react";
+import { User, Users, Edit, Trash2, UserPlus } from "lucide-react";
 import { DeleteAgentDialog } from "./DeleteAgentDialog";
 import { EmptyAgentsList } from "./EmptyAgentsList";
-import { getTenureText, getGroupBadgeColor } from "./agentUtils";
+import { getGroupBadgeColor } from "./agentUtils";
 
 interface AgentsListProps {
   agents: Agent[];
@@ -57,8 +56,6 @@ export const AgentsList = ({ agents, isLoading, teamLeadId, onAgentUpdated }: Ag
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Group</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>Tenure</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -74,11 +71,6 @@ export const AgentsList = ({ agents, isLoading, teamLeadId, onAgentUpdated }: Ag
                       {agent.group_name}
                     </Badge>
                   </TableCell>
-                  <TableCell className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-muted-foreground" />
-                    {format(new Date(agent.start_date), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>{getTenureText(agent.start_date)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button 
