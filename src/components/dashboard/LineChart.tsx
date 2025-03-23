@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DailyStats } from "@/types/teamLead";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Progress } from "@/components/ui/progress";
 
 interface LineChartProps {
   data: DailyStats[];
@@ -50,6 +50,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
       // For daily view, just use the sorted data with totals calculated
       formattedData = sortedData.map(stat => ({
         date: stat.date,
+        name: teamLeadName, // Replace date with team lead name
         calls: stat.calls || 0,
         emails: stat.emails || 0,
         live_chat: stat.live_chat || 0,
@@ -71,6 +72,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = {
             date: weekKey,
+            name: teamLeadName, // Replace date with team lead name
             calls: 0,
             emails: 0,
             live_chat: 0,
@@ -86,6 +88,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
         
         weeklyData[weekKey] = {
           date: weekKey,
+          name: teamLeadName, // Replace date with team lead name
           calls: last7Days.reduce((sum, d) => sum + (d.calls || 0), 0),
           emails: last7Days.reduce((sum, d) => sum + (d.emails || 0), 0),
           live_chat: last7Days.reduce((sum, d) => sum + (d.live_chat || 0), 0),
@@ -116,6 +119,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
         if (!monthlyData[monthKey]) {
           monthlyData[monthKey] = {
             date: monthKey,
+            name: teamLeadName, // Replace date with team lead name
             calls: 0,
             emails: 0,
             live_chat: 0,
@@ -131,6 +135,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
         
         monthlyData[monthKey] = {
           date: monthKey,
+          name: teamLeadName, // Replace date with team lead name
           calls: last30Days.reduce((sum, d) => sum + (d.calls || 0), 0),
           emails: last30Days.reduce((sum, d) => sum + (d.emails || 0), 0),
           live_chat: last30Days.reduce((sum, d) => sum + (d.live_chat || 0), 0),
@@ -155,7 +160,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
     setProcessedData(formattedData.sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     ));
-  }, [data, timeRange]);
+  }, [data, timeRange, teamLeadName]);
 
   const toggleMetric = (metric: string) => {
     if (visibleMetrics.includes(metric)) {
@@ -177,13 +182,22 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
   };
 
   const targetMet = isTargetMet();
+  
+  // Calculate percentage of target completion
+  const calculateTargetPercentage = () => {
+    if (processedData.length === 0) return 0;
+    const latestTotal = processedData[0].total;
+    return Math.min(Math.round((latestTotal / currentTarget) * 100), 100);
+  };
+
+  const targetPercentage = calculateTargetPercentage();
 
   return (
     <Card className="mb-6">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <CardTitle className="text-xl font-semibold">
-            Performance Trends - {teamLeadName}
+            Performance Bar - {teamLeadName}
           </CardTitle>
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -222,10 +236,19 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
             </Button>
           ))}
         </div>
+        
+        {/* Target progress indicator */}
+        <div className="mt-4">
+          <div className="flex justify-between mb-1">
+            <span className="text-sm font-medium">Target Progress ({targetPercentage}%)</span>
+            <span className="text-sm font-medium">{currentTarget} items</span>
+          </div>
+          <Progress value={targetPercentage} className="h-2" />
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <RechartsLineChart data={processedData}>
+          <BarChart data={processedData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -234,7 +257,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
                 if (active && payload && payload.length) {
                   return (
                     <div className="bg-background border rounded-md shadow-md p-2">
-                      <p className="font-semibold">{label}</p>
+                      <p className="font-semibold">{teamLeadName} - {label}</p>
                       {payload.map((entry) => (
                         <p key={entry.name} style={{ color: entry.color }}>
                           {entry.name}: {entry.value}
@@ -263,17 +286,16 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
             />
             {METRICS.map(metric => (
               visibleMetrics.includes(metric.key) && (
-                <Line
+                <Bar
                   key={metric.key}
                   type="monotone"
                   dataKey={metric.key}
-                  stroke={metric.color}
+                  fill={metric.color}
                   name={metric.name}
-                  activeDot={{ r: 8 }}
                 />
               )
             ))}
-          </RechartsLineChart>
+          </BarChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
