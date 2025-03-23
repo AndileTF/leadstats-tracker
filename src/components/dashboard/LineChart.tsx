@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DailyStats } from "@/types/teamLead";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
+import { differenceInDays } from 'date-fns';
+import { useDateRange } from '@/context/DateContext';
 
 interface LineChartProps {
   data: DailyStats[];
@@ -21,12 +23,10 @@ const METRICS = [
   { key: 'survey_tickets', name: 'Survey Tickets', color: '#d62728' },
 ];
 
-// Target constants
-const TARGETS = {
-  daily: 20,
-  weekly: 120,
-  monthly: 480
-};
+// Base target values per day
+const DAILY_TARGET = 20;
+const WEEKLY_TARGET = 120; // ~17 per day
+const MONTHLY_TARGET = 480; // ~16 per day
 
 type TimeRange = 'daily' | 'weekly' | 'monthly';
 
@@ -34,6 +34,32 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
   const [visibleMetrics, setVisibleMetrics] = useState(METRICS.map(m => m.key));
   const [timeRange, setTimeRange] = useState<TimeRange>('daily');
   const [processedData, setProcessedData] = useState<any[]>([]);
+  const { dateRange } = useDateRange();
+  
+  // Calculate the target based on the selected date range
+  const calculateTarget = () => {
+    const start = new Date(dateRange.startDate);
+    const end = new Date(dateRange.endDate);
+    const daysDifference = differenceInDays(end, start) + 1; // +1 to include both start and end dates
+    
+    if (timeRange === 'daily') {
+      return DAILY_TARGET;
+    } else if (timeRange === 'weekly') {
+      // If the date range is less than 7 days, prorate the weekly target
+      return daysDifference < 7 
+        ? Math.round((daysDifference / 7) * WEEKLY_TARGET) 
+        : WEEKLY_TARGET;
+    } else if (timeRange === 'monthly') {
+      // If the date range is less than 30 days, prorate the monthly target
+      return daysDifference < 30 
+        ? Math.round((daysDifference / 30) * MONTHLY_TARGET) 
+        : MONTHLY_TARGET;
+    }
+    return DAILY_TARGET; // Default fallback
+  };
+
+  // Calculate current target
+  const currentTarget = calculateTarget();
 
   // Process data whenever time range changes or data updates
   useEffect(() => {
@@ -170,9 +196,6 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
     }
   };
 
-  // Get the current target based on selected time range
-  const currentTarget = TARGETS[timeRange];
-
   // Calculate if the team lead is meeting targets
   const isTargetMet = () => {
     if (processedData.length === 0) return false;
@@ -203,13 +226,13 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <ToggleGroup type="single" value={timeRange} onValueChange={(value) => value && setTimeRange(value as TimeRange)}>
               <ToggleGroupItem value="daily" aria-label="Toggle daily view">
-                Daily (Target: {TARGETS.daily})
+                Daily (Target: {DAILY_TARGET})
               </ToggleGroupItem>
               <ToggleGroupItem value="weekly" aria-label="Toggle weekly view">
-                Weekly (Target: {TARGETS.weekly})
+                Weekly (Target: {timeRange === 'weekly' ? currentTarget : WEEKLY_TARGET})
               </ToggleGroupItem>
               <ToggleGroupItem value="monthly" aria-label="Toggle monthly view">
-                Monthly (Target: {TARGETS.monthly})
+                Monthly (Target: {timeRange === 'monthly' ? currentTarget : MONTHLY_TARGET})
               </ToggleGroupItem>
             </ToggleGroup>
 
