@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLead, DailyStats } from "@/types/teamLead";
@@ -5,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
+import { format } from 'date-fns';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
