@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { TeamLead, DailyStats, DateRange } from "@/types/teamLead";
-import { format } from 'date-fns';
+import { TeamLead, DailyStats } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
+import { useDateRange } from '@/context/DateContext';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -13,10 +12,7 @@ const TeamLeadDashboard = () => {
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   const [stats, setStats] = useState<DailyStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: format(new Date(), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd')
-  });
+  const { dateRange } = useDateRange();
 
   useEffect(() => {
     fetchTeamLeads();
@@ -221,8 +217,7 @@ const TeamLeadDashboard = () => {
         <DashboardHeader 
           showForm={showForm}
           setShowForm={setShowForm}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
+          onApplyFilter={fetchStats}
         />
         
         <DashboardContent

@@ -5,19 +5,17 @@ import { DateRange } from "@/types/teamLead";
 import { useState, useEffect } from "react";
 import { CalendarDays } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useDateRange } from "@/context/DateContext";
 
 interface DateFilterProps {
-  dateRange: DateRange;
-  setDateRange: (range: DateRange) => void;
+  onApplyFilter?: () => void;
 }
 
-export const DateFilter = ({
-  dateRange,
-  setDateRange
-}: DateFilterProps) => {
+export const DateFilter = ({ onApplyFilter }: DateFilterProps) => {
+  const { dateRange, setDateRange } = useDateRange();
   const [tempRange, setTempRange] = useState<DateRange>(dateRange);
 
-  // Update tempRange when dateRange prop changes
+  // Update tempRange when dateRange from context changes
   useEffect(() => {
     setTempRange(dateRange);
   }, [dateRange]);
@@ -49,6 +47,10 @@ export const DateFilter = ({
       title: "Filters Applied",
       description: `Date range: ${tempRange.startDate} to ${tempRange.endDate}`,
     });
+    
+    if (onApplyFilter) {
+      onApplyFilter();
+    }
   };
 
   return (

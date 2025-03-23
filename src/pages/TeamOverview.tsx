@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { TeamLeadOverview, DateRange, DailyStats, TeamLead } from "@/types/teamLead";
+import { TeamLeadOverview, DailyStats, TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
@@ -15,14 +15,12 @@ import { HeatmapChart } from "@/components/dashboard/HeatmapChart";
 import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
 import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDateRange } from "@/context/DateContext";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: format(new Date(), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd')
-  });
+  const { dateRange } = useDateRange();
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
@@ -274,7 +272,10 @@ const TeamOverview = () => {
 
         <Card>
           <CardContent className="p-6">
-            <DateFilter dateRange={dateRange} setDateRange={setDateRange} />
+            <DateFilter onApplyFilter={() => {
+              fetchOverview();
+              fetchDailyStats();
+            }} />
 
             <Tabs defaultValue="overview" className="mt-6">
               <TabsList className="grid w-full grid-cols-2 mb-4">

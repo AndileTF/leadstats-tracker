@@ -2,20 +2,17 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { DateFilter } from "@/components/dashboard/DateFilter";
-import { DateRange } from "@/types/teamLead";
 
 interface DashboardHeaderProps {
   showForm: boolean;
   setShowForm: (show: boolean) => void;
-  dateRange: DateRange;
-  setDateRange: (range: DateRange) => void;
+  onApplyFilter?: () => void;
 }
 
 export const DashboardHeader = ({ 
   showForm, 
-  setShowForm, 
-  dateRange, 
-  setDateRange 
+  setShowForm,
+  onApplyFilter
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
 
@@ -28,10 +25,7 @@ export const DashboardHeader = ({
         <p className="text-muted-foreground mt-2">Track and analyze your team's performance metrics</p>
       </div>
       <div className="flex gap-4">
-        <DateFilter
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-        />
+        <DateFilter onApplyFilter={onApplyFilter} />
         <Button 
           onClick={() => setShowForm(!showForm)}
           className="bg-primary/20 hover:bg-primary/30 text-primary"
