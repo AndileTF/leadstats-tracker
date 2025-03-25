@@ -5,35 +5,44 @@
 
 @layer base {
   :root {
-    --background: 231 47% 13%;
+    --background: 240 50% 15%;
     --foreground: 210 40% 98%;
 
-    --card: 229 44% 18%;
+    --card: 240 45% 20%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 229 44% 18%;
+    --popover: 240 45% 20%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 252 95% 85%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 295 90% 65%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 240 30% 25%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 30% 25%;
+    --muted-foreground: 215 20% 75%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 295 90% 65%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 240 30% 25%;
+    --input: 240 30% 25%;
+    --ring: 295 90% 65%;
 
     --radius: 0.75rem;
+    
+    --sidebar-background: 240 50% 15%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 295 90% 65%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 295 90% 65%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 240 30% 25%;
+    --sidebar-ring: 295 90% 65%;
   }
 }
 
@@ -61,3 +70,16 @@
 .form-input {
   @apply bg-background/50 border border-white/10 rounded-lg p-3 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:outline-none;
 }
+
+.liquid-gradient {
+  @apply bg-gradient-to-r from-[#c630a5] to-[#e24bab];
+}
+
+.liquid-text {
+  @apply bg-clip-text text-transparent liquid-gradient;
+}
+
+.liquid-border {
+  @apply border-[#c630a5];
+}
+
