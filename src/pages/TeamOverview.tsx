@@ -12,6 +12,7 @@ import { GaugeChart } from "@/components/dashboard/GaugeChart";
 import { PieChart } from "@/components/dashboard/PieChart";
 import { BarChartComparison } from "@/components/dashboard/BarChartComparison";
 import { HeatmapChart } from "@/components/dashboard/HeatmapChart";
+import { ChannelHeatmap } from "@/components/dashboard/ChannelHeatmap";
 import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
 import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -278,9 +279,10 @@ const TeamOverview = () => {
             }} />
 
             <Tabs defaultValue="overview" className="mt-6">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="overview">Team Overview</TabsTrigger>
                 <TabsTrigger value="detailed">Detailed Analysis</TabsTrigger>
+                <TabsTrigger value="workload">Workload Analysis</TabsTrigger>
               </TabsList>
               
               <TabsContent value="overview" className="space-y-6">
@@ -336,6 +338,12 @@ const TeamOverview = () => {
                     )}
                   </div>
                 )}
+                
+                <HeatmapChart data={dailyStats} teamLeads={teamLeads} />
+              </TabsContent>
+              
+              <TabsContent value="workload" className="space-y-6">
+                <ChannelHeatmap data={dailyStats} teamLeads={teamLeads} />
                 
                 <HeatmapChart data={dailyStats} teamLeads={teamLeads} />
               </TabsContent>
