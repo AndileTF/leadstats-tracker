@@ -5,44 +5,44 @@
 
 @layer base {
   :root {
-    --background: 240 50% 15%;
+    --background: 222 81% 15%;
     --foreground: 210 40% 98%;
 
-    --card: 240 45% 20%;
+    --card: 222 75% 20%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 240 45% 20%;
+    --popover: 222 75% 20%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 295 90% 65%;
+    --primary: 307 81% 48%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 30% 25%;
+    --secondary: 222 70% 25%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 240 30% 25%;
+    --muted: 222 70% 25%;
     --muted-foreground: 215 20% 75%;
 
-    --accent: 295 90% 65%;
+    --accent: 307 81% 48%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 240 30% 25%;
-    --input: 240 30% 25%;
-    --ring: 295 90% 65%;
+    --border: 222 70% 25%;
+    --input: 222 70% 25%;
+    --ring: 307 81% 48%;
 
     --radius: 0.75rem;
     
-    --sidebar-background: 240 50% 15%;
+    --sidebar-background: 222 81% 15%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 295 90% 65%;
+    --sidebar-primary: 307 81% 48%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 295 90% 65%;
+    --sidebar-accent: 307 81% 48%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 240 30% 25%;
-    --sidebar-ring: 295 90% 65%;
+    --sidebar-border: 222 70% 25%;
+    --sidebar-ring: 307 81% 48%;
   }
 }
 
@@ -72,7 +72,7 @@
 }
 
 .liquid-gradient {
-  @apply bg-gradient-to-r from-[#c630a5] to-[#e24bab];
+  @apply bg-gradient-to-r from-[#cf1e90] to-[#e24bab];
 }
 
 .liquid-text {
@@ -80,6 +80,9 @@
 }
 
 .liquid-border {
-  @apply border-[#c630a5];
+  @apply border-[#cf1e90];
 }
 
+.liquid-bg {
+  @apply bg-[#1e2b69];
+}

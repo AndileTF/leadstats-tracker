@@ -14,9 +14,9 @@ export const TeamOverviewHeader = () => {
       <div className="flex items-center">
         <div className="mr-4">
           <img 
-            src="/lovable-uploads/8568c205-5c17-43b0-8e2f-f774633b1c29.png" 
+            src="/lovable-uploads/4f893118-dd2a-4f5f-b494-80f69b20bf3c.png" 
             alt="LIQUID Intelligent Technologies" 
-            className="h-12 w-auto"
+            className="h-14 w-auto"
           />
         </div>
         <div>
@@ -29,7 +29,7 @@ export const TeamOverviewHeader = () => {
       <Button 
         variant="default"
         onClick={() => navigate('/team-lead-dashboard')}
-        className="bg-[#c630a5] hover:bg-[#d845b6]"
+        className="bg-[#cf1e90] hover:bg-[#e24bab]"
       >
         TL Portal
       </Button>
