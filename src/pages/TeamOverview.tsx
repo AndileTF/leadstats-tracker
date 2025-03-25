@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +148,12 @@ const TeamOverview = () => {
 
   const fetchOverview = async () => {
     try {
+      setIsLoading(true);
       console.log('Fetching overview with date range:', dateRange);
+      
+      // Clear the previous overview data when fetching new data
+      setOverview([]);
+      
       const {
         data: dailyStats,
         error: dailyStatsError
@@ -164,29 +170,43 @@ const TeamOverview = () => {
           date,
           team_lead_id,
           sla_percentage
-        `).gte('date', dateRange.startDate).lte('date', dateRange.endDate);
+        `)
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate);
+        
       if (dailyStatsError) throw dailyStatsError;
+      
       const {
         data: surveyTickets,
         error: surveyError
-      } = await supabase.from('After Call Survey Tickets').select('*').gte('date', dateRange.startDate).lte('date', dateRange.endDate);
+      } = await supabase.from('After Call Survey Tickets')
+        .select('*')
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate);
+        
       if (surveyError) throw surveyError;
-      console.log('Fetched daily stats:', dailyStats);
-      console.log('Fetched survey tickets:', surveyTickets);
+      
+      console.log('Fetched daily stats for date range:', dateRange, dailyStats);
+      console.log('Fetched survey tickets for date range:', dateRange, surveyTickets);
+      
       const surveyTicketMap = surveyTickets.reduce((acc: {
         [key: string]: number;
       }, curr) => {
         acc[curr.team_lead_id] = (acc[curr.team_lead_id] || 0) + (curr.ticket_count || 0);
         return acc;
       }, {});
-      const overview = dailyStats.reduce((acc: {
-        [key: string]: any;
-      }, curr) => {
+      
+      const overviewMap: { [key: string]: any } = {};
+      
+      // Process daily stats into the overview
+      dailyStats.forEach(curr => {
         const name = curr.team_leads?.name;
         const teamLeadId = curr.team_lead_id;
-        if (!name || !teamLeadId) return acc;
-        if (!acc[name]) {
-          acc[name] = {
+        
+        if (!name || !teamLeadId) return;
+        
+        if (!overviewMap[teamLeadId]) {
+          overviewMap[teamLeadId] = {
             name,
             team_lead_id: teamLeadId,
             total_calls: 0,
@@ -200,26 +220,40 @@ const TeamOverview = () => {
             sla_days: 0
           };
         }
-        acc[name].total_calls += curr.calls || 0;
-        acc[name].total_emails += curr.emails || 0;
-        acc[name].total_live_chat += curr.live_chat || 0;
-        acc[name].total_escalations += curr.escalations || 0;
-        acc[name].total_qa_assessments += curr.qa_assessments || 0;
-        acc[name].total_survey_tickets = surveyTicketMap[teamLeadId] || 0;
+        
+        overviewMap[teamLeadId].total_calls += curr.calls || 0;
+        overviewMap[teamLeadId].total_emails += curr.emails || 0;
+        overviewMap[teamLeadId].total_live_chat += curr.live_chat || 0;
+        overviewMap[teamLeadId].total_escalations += curr.escalations || 0;
+        overviewMap[teamLeadId].total_qa_assessments += curr.qa_assessments || 0;
+        
         if (curr.sla_percentage) {
-          acc[name].average_sla += curr.sla_percentage;
-          acc[name].sla_days += 1;
+          overviewMap[teamLeadId].average_sla += curr.sla_percentage;
+          overviewMap[teamLeadId].sla_days += 1;
         }
-        acc[name].total_days += 1;
-        return acc;
-      }, {});
-
-      Object.values(overview).forEach((item: any) => {
+        
+        overviewMap[teamLeadId].total_days += 1;
+      });
+      
+      // Add survey tickets data
+      Object.entries(surveyTicketMap).forEach(([teamLeadId, count]) => {
+        if (overviewMap[teamLeadId]) {
+          overviewMap[teamLeadId].total_survey_tickets = count;
+        }
+      });
+      
+      // Calculate averages
+      Object.values(overviewMap).forEach((item: any) => {
         if (item.sla_days > 0) {
           item.average_sla = item.average_sla / item.sla_days;
         }
       });
-      setOverview(Object.values(overview));
+      
+      // Convert map to array
+      const overviewArray = Object.values(overviewMap);
+      console.log('Processed overview data:', overviewArray);
+      
+      setOverview(overviewArray);
     } catch (error) {
       console.error('Error fetching overview:', error);
       toast({
@@ -237,9 +271,13 @@ const TeamOverview = () => {
       const {
         data,
         error
-      } = await supabase.from('daily_stats').select('*').gte('date', dateRange.startDate).lte('date', dateRange.endDate).order('date', {
-        ascending: true
-      });
+      } = await supabase.from('daily_stats').select('*')
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate)
+        .order('date', {
+          ascending: true
+        });
+        
       if (error) throw error;
       setDailyStats(data);
     } catch (error) {

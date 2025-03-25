@@ -12,6 +12,7 @@ interface PieChartProps {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f0e', '#2ca02c', '#d62728', '#7f7f7f', '#bcbd22', '#17becf'];
 
 export const PieChart = ({ data, metric, title }: PieChartProps) => {
+  // Filter to only include items with values for the selected metric
   const pieData = data
     .filter(item => item[metric] && Number(item[metric]) > 0)
     .map(item => ({
@@ -56,7 +57,7 @@ export const PieChart = ({ data, metric, title }: PieChartProps) => {
           </ResponsiveContainer>
         ) : (
           <div className="flex justify-center items-center h-[300px] text-muted-foreground">
-            No data available
+            No data available for the selected date range
           </div>
         )}
       </CardContent>
