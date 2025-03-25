@@ -302,8 +302,8 @@ const TeamOverview = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <PieChart 
                     data={overview} 
-                    metric="total_calls" 
-                    title="Distribution of Calls" 
+                    metric="total_qa_assessments" 
+                    title="Distribution of QA Assessments" 
                   />
                   <PieChart 
                     data={overview} 

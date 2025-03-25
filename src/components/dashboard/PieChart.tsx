@@ -19,10 +19,18 @@ export const PieChart = ({ data, metric, title }: PieChartProps) => {
       value: Number(item[metric]) || 0,
     }));
 
+  // Calculate total sum for the metric
+  const totalSum = pieData.reduce((sum, item) => sum + item.value, 0);
+
   return (
     <Card className="mb-6">
       <CardHeader>
         <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+        {totalSum > 0 && (
+          <p className="text-muted-foreground text-sm">
+            Total sum of {title.replace('Distribution of ', '')}: {totalSum}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         {pieData.length > 0 ? (
@@ -42,7 +50,7 @@ export const PieChart = ({ data, metric, title }: PieChartProps) => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`${value}`, 'Count']} />
+              <Tooltip formatter={(value) => [`${value}`, 'Sum']} />
               <Legend />
             </RechartsPieChart>
           </ResponsiveContainer>
