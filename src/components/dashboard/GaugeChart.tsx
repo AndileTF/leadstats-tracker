@@ -1,6 +1,9 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TeamLeadOverview } from "@/types/teamLead";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface GaugeChartProps {
   data: TeamLeadOverview[];
@@ -8,8 +11,8 @@ interface GaugeChartProps {
   description?: string;
 }
 
-// Calculate average daily issues per agent
-const calculateAvgDailyIssuesPerAgent = (data: TeamLeadOverview[]): number => {
+// Calculate daily issues for team lead
+const calculateDailyIssuesPerTeamLead = (data: TeamLeadOverview[]): number => {
   if (data.length === 0) return 0;
   
   let totalIssues = 0;
@@ -23,20 +26,25 @@ const calculateAvgDailyIssuesPerAgent = (data: TeamLeadOverview[]): number => {
     totalDays += item.total_days || 0;
   });
   
-  // Average per agent per day
-  const agentCount = data.length;
-  if (totalDays === 0 || agentCount === 0) return 0;
-  
-  return totalIssues / totalDays / agentCount;
+  if (totalDays === 0) return 0;
+  return totalIssues / totalDays;
 };
 
 export const GaugeChart = ({ data, title, description }: GaugeChartProps) => {
-  // Calculate daily issues per agent
-  const avgDailyIssuesPerAgent = calculateAvgDailyIssuesPerAgent(data);
+  // Calculate daily issues per team lead
+  const dailyIssuesPerTeamLead = calculateDailyIssuesPerTeamLead(data);
+  
+  // State for tracking total traffic received
+  const [totalTraffic, setTotalTraffic] = useState<number | string>("");
   
   // Define target (this could be configurable in a real app)
   const targetIssuesPerDay = 20;
-  const issuePercentage = Math.min(100, Math.max(0, (avgDailyIssuesPerAgent / targetIssuesPerDay) * 100));
+  const issuePercentage = Math.min(100, Math.max(0, (dailyIssuesPerTeamLead / targetIssuesPerDay) * 100));
+  
+  // Calculate contribution percentage
+  const contributionPercentage = totalTraffic && Number(totalTraffic) > 0 
+    ? Math.min(100, (dailyIssuesPerTeamLead / Number(totalTraffic)) * 100)
+    : 0;
 
   return (
     <Card className="mb-6">
@@ -46,9 +54,9 @@ export const GaugeChart = ({ data, title, description }: GaugeChartProps) => {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center">
-          <h3 className="text-lg font-semibold mb-2">Issues Per Agent Per Day</h3>
+          <h3 className="text-lg font-semibold mb-2">Team Lead Issues Per Day</h3>
           <div className="flex items-center space-x-2 mb-1">
-            <span className="text-3xl font-bold">{avgDailyIssuesPerAgent.toFixed(1)}</span>
+            <span className="text-3xl font-bold">{dailyIssuesPerTeamLead.toFixed(1)}</span>
             <span className="text-sm text-muted-foreground">/ {targetIssuesPerDay} target</span>
           </div>
           
@@ -95,6 +103,68 @@ export const GaugeChart = ({ data, title, description }: GaugeChartProps) => {
               : issuePercentage >= 80 
               ? 'Near target' 
               : 'Below target'}
+          </div>
+          
+          {/* Traffic received input */}
+          <div className="w-full mt-6 border-t pt-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="totalTraffic">Total Traffic Received</Label>
+              <Input
+                id="totalTraffic"
+                type="number"
+                min="0"
+                value={totalTraffic}
+                onChange={(e) => setTotalTraffic(e.target.value)}
+                placeholder="Enter total traffic..."
+                className="w-full"
+              />
+              
+              {Number(totalTraffic) > 0 && (
+                <div className="mt-4 text-center">
+                  <p className="font-medium">Team Lead Contribution</p>
+                  <div className="flex items-center justify-center space-x-2 mt-1">
+                    <span className="text-2xl font-semibold">{contributionPercentage.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">
+                      of daily traffic
+                    </span>
+                  </div>
+                  
+                  {/* Channel breakdown if data exists */}
+                  {data.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Calls:</span>
+                        <span className="font-medium">
+                          {(data.reduce((sum, item) => sum + (item.total_calls || 0), 0) / 
+                          (data.reduce((sum, item) => sum + (item.total_days || 0), 0) || 1)).toFixed(1)}/day
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Emails:</span>
+                        <span className="font-medium">
+                          {(data.reduce((sum, item) => sum + (item.total_emails || 0), 0) / 
+                          (data.reduce((sum, item) => sum + (item.total_days || 0), 0) || 1)).toFixed(1)}/day
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Chat:</span>
+                        <span className="font-medium">
+                          {(data.reduce((sum, item) => sum + (item.total_live_chat || 0), 0) / 
+                          (data.reduce((sum, item) => sum + (item.total_days || 0), 0) || 1)).toFixed(1)}/day
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Escalations:</span>
+                        <span className="font-medium">
+                          {(data.reduce((sum, item) => sum + (item.total_escalations || 0), 0) / 
+                          (data.reduce((sum, item) => sum + (item.total_days || 0), 0) || 1)).toFixed(1)}/day
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

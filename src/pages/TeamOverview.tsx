@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -327,8 +326,8 @@ const TeamOverview = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <GaugeChart 
                     data={overview} 
-                    title="Issues Per Agent Per Day" 
-                    description="Daily target performance for customer support issues"
+                    title="Team Lead Issues Per Day" 
+                    description="Daily performance for customer support issues by team lead"
                   />
                   <BarChartComparison data={overview} />
                 </div>
