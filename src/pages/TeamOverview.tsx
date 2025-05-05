@@ -1,138 +1,45 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { TeamLeadOverview, DailyStats, TeamLead } from "@/types/teamLead";
-import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
-import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
-import { DateFilter } from "@/components/dashboard/DateFilter";
+
+import { useEffect, useState } from "react";
+import AuthLayout from "@/components/AuthLayout";
 import { TeamOverviewHeader } from "@/components/dashboard/TeamOverviewHeader";
-import { GaugeChart } from "@/components/dashboard/GaugeChart";
-import { PieChart } from "@/components/dashboard/PieChart";
-import { BarChartComparison } from "@/components/dashboard/BarChartComparison";
-import { HeatmapChart } from "@/components/dashboard/HeatmapChart";
-import { ChannelHeatmap } from "@/components/dashboard/ChannelHeatmap";
-import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
-import { LineChart } from "@/components/dashboard/LineChart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDateRange } from "@/context/DateContext";
+import { TeamLeadTabs } from "@/components/dashboard/TeamLeadTabs";
+import { AgentsList } from "@/components/dashboard/AgentsList";
+import { supabase } from "@/integrations/supabase/client";
+import { TeamLead, DailyStats, Agent } from "@/types/teamLead";
+import { toast } from "@/hooks/use-toast";
 
 const TeamOverview = () => {
-  const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { dateRange } = useDateRange();
-  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
-  
+  const [showForm, setShowForm] = useState(false);
+  const [stats, setStats] = useState<DailyStats[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+
+  // Fetch team leads on component mount
   useEffect(() => {
-    const dailyStatsChannel = supabase
-      .channel('overview-daily-stats-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'daily_stats'
-        },
-        (payload) => {
-          console.log('Real-time update received for daily_stats:', payload);
-          const changeDate = (payload.new as any).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-            fetchOverview();
-            fetchDailyStats();
-            toast({
-              title: "Data Updated",
-              description: "Dashboard data has been refreshed"
-            });
-          }
-        }
-      )
-      .subscribe();
-      
-    const surveyTicketsChannel = supabase
-      .channel('overview-survey-tickets-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'After Call Survey Tickets'
-        },
-        (payload) => {
-          console.log('Real-time update received for survey tickets:', payload);
-          const changeDate = (payload.new as any).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-            fetchOverview();
-            fetchDailyStats();
-            toast({
-              title: "Survey Data Updated",
-              description: "Survey data has been refreshed"
-            });
-          }
-        }
-      )
-      .subscribe();
-      
-    const teamLeadsChannel = supabase
-      .channel('overview-team-leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'team_leads'
-        },
-        (payload) => {
-          console.log('Real-time update received for team_leads:', payload);
-          fetchTeamLeads();
-          fetchOverview();
-          toast({
-            title: "Team Leads Updated",
-            description: "Team leads data has been refreshed"
-          });
-        }
-      )
-      .subscribe();
-      
-    const agentsChannel = supabase
-      .channel('overview-agents-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'agents'
-        },
-        (payload) => {
-          console.log('Real-time update received for agents:', payload);
-          fetchTeamLeads();
-        }
-      )
-      .subscribe();
-      
     fetchTeamLeads();
-    fetchOverview();
-    fetchDailyStats();
-    
-    return () => {
-      supabase.removeChannel(dailyStatsChannel);
-      supabase.removeChannel(surveyTicketsChannel);
-      supabase.removeChannel(teamLeadsChannel);
-      supabase.removeChannel(agentsChannel);
-    };
-  }, [dateRange]);
+  }, []);
+
+  // Fetch stats when selectedTeamLead changes
+  useEffect(() => {
+    if (selectedTeamLead) {
+      fetchStats();
+      fetchAgents(selectedTeamLead);
+    }
+  }, [selectedTeamLead]);
 
   const fetchTeamLeads = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('team_leads').select('*');
+      const { data, error } = await supabase
+        .from('team_leads')
+        .select('*')
+        .order('name');
+
       if (error) throw error;
-      setTeamLeads(data);
-      if (data.length > 0 && !selectedTeamLead) {
+      
+      if (data && data.length > 0) {
+        setTeamLeads(data);
         setSelectedTeamLead(data[0].id);
       }
     } catch (error) {
@@ -140,255 +47,85 @@ const TeamOverview = () => {
       toast({
         title: "Error",
         description: "Failed to fetch team leads",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const fetchOverview = async () => {
+  const fetchStats = async () => {
+    if (!selectedTeamLead) return;
+
     try {
-      setIsLoading(true);
-      console.log('Fetching overview with date range:', dateRange);
-      
-      // Clear the previous overview data when fetching new data
-      setOverview([]);
-      
-      const {
-        data: dailyStats,
-        error: dailyStatsError
-      } = await supabase.from('daily_stats').select(`
-          team_leads (
-            id,
-            name
-          ),
-          calls,
-          emails,
-          live_chat,
-          escalations,
-          qa_assessments,
-          date,
-          team_lead_id,
-          sla_percentage
-        `)
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate);
-        
-      if (dailyStatsError) throw dailyStatsError;
-      
-      const {
-        data: surveyTickets,
-        error: surveyError
-      } = await supabase.from('After Call Survey Tickets')
+      const { data, error } = await supabase
+        .from('daily_stats')
         .select('*')
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate);
-        
-      if (surveyError) throw surveyError;
+        .eq('team_lead_id', selectedTeamLead)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
       
-      console.log('Fetched daily stats for date range:', dateRange, dailyStats);
-      console.log('Fetched survey tickets for date range:', dateRange, surveyTickets);
-      
-      const surveyTicketMap = surveyTickets.reduce((acc: {
-        [key: string]: number;
-      }, curr) => {
-        acc[curr.team_lead_id] = (acc[curr.team_lead_id] || 0) + (curr.ticket_count || 0);
-        return acc;
-      }, {});
-      
-      const overviewMap: { [key: string]: any } = {};
-      
-      // Process daily stats into the overview
-      dailyStats.forEach(curr => {
-        const name = curr.team_leads?.name;
-        const teamLeadId = curr.team_lead_id;
-        
-        if (!name || !teamLeadId) return;
-        
-        if (!overviewMap[teamLeadId]) {
-          overviewMap[teamLeadId] = {
-            name,
-            team_lead_id: teamLeadId,
-            total_calls: 0,
-            total_emails: 0,
-            total_live_chat: 0,
-            total_escalations: 0,
-            total_qa_assessments: 0,
-            total_survey_tickets: 0,
-            total_days: 0,
-            average_sla: 0,
-            sla_days: 0
-          };
-        }
-        
-        overviewMap[teamLeadId].total_calls += curr.calls || 0;
-        overviewMap[teamLeadId].total_emails += curr.emails || 0;
-        overviewMap[teamLeadId].total_live_chat += curr.live_chat || 0;
-        overviewMap[teamLeadId].total_escalations += curr.escalations || 0;
-        overviewMap[teamLeadId].total_qa_assessments += curr.qa_assessments || 0;
-        
-        if (curr.sla_percentage) {
-          overviewMap[teamLeadId].average_sla += curr.sla_percentage;
-          overviewMap[teamLeadId].sla_days += 1;
-        }
-        
-        overviewMap[teamLeadId].total_days += 1;
-      });
-      
-      // Add survey tickets data
-      Object.entries(surveyTicketMap).forEach(([teamLeadId, count]) => {
-        if (overviewMap[teamLeadId]) {
-          overviewMap[teamLeadId].total_survey_tickets = count;
-        }
-      });
-      
-      // Calculate averages
-      Object.values(overviewMap).forEach((item: any) => {
-        if (item.sla_days > 0) {
-          item.average_sla = item.average_sla / item.sla_days;
-        }
-      });
-      
-      // Convert map to array
-      const overviewArray = Object.values(overviewMap);
-      console.log('Processed overview data:', overviewArray);
-      
-      setOverview(overviewArray);
+      setStats(data || []);
     } catch (error) {
-      console.error('Error fetching overview:', error);
+      console.error('Error fetching stats:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch overview",
-        variant: "destructive"
+        description: "Failed to fetch team lead statistics",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchAgents = async (teamLeadId: string) => {
+    try {
+      setIsLoadingAgents(true);
+      const { data, error } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      setAgents(data || []);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch agents",
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingAgents(false);
     }
   };
-
-  const fetchDailyStats = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('daily_stats').select('*')
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate)
-        .order('date', {
-          ascending: true
-        });
-        
-      if (error) throw error;
-      setDailyStats(data);
-    } catch (error) {
-      console.error('Error fetching daily stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch daily statistics",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const getTeamLeadStats = () => {
-    if (!selectedTeamLead) return [];
-    return dailyStats.filter(stat => stat.team_lead_id === selectedTeamLead);
-  };
-
-  const getTeamLeadName = () => {
-    const teamLead = teamLeads.find(tl => tl.id === selectedTeamLead);
-    return teamLead?.name || 'Unknown';
-  };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <AuthLayout>
+      <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <TeamOverviewHeader />
-
-        <Card>
-          <CardContent className="p-6">
-            <DateFilter onApplyFilter={() => {
-              fetchOverview();
-              fetchDailyStats();
-            }} />
-
-            <Tabs defaultValue="overview" className="mt-6">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="overview">Team Overview</TabsTrigger>
-                <TabsTrigger value="detailed">Detailed Analysis</TabsTrigger>
-                <TabsTrigger value="workload">Workload Analysis</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <GaugeChart 
-                    data={overview} 
-                    title="Team Lead Issues Per Day" 
-                    description="Daily performance for customer support issues by team lead"
-                  />
-                  <BarChartComparison data={overview} />
-                </div>
-                
-                <PerformanceChart data={overview} />
-                <PerformanceTable data={overview} />
-                <TeamNetworkGraph data={overview} />
-              </TabsContent>
-              
-              <TabsContent value="detailed" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <PieChart 
-                    data={overview} 
-                    metric="total_qa_assessments" 
-                    title="Distribution of QA Assessments" 
-                  />
-                  <PieChart 
-                    data={overview} 
-                    metric="total_emails" 
-                    title="Distribution of Emails" 
-                  />
-                </div>
-                
-                {teamLeads.length > 0 && (
-                  <div className="mt-6">
-                    <div className="flex gap-4 mb-4">
-                      <select 
-                        value={selectedTeamLead || ''}
-                        onChange={(e) => setSelectedTeamLead(e.target.value)}
-                        className="border rounded px-3 py-2 bg-slate-900"
-                      >
-                        {teamLeads.map(tl => (
-                          <option key={tl.id} value={tl.id}>{tl.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    {selectedTeamLead && (
-                      <>
-                        <LineChart 
-                          data={getTeamLeadStats()} 
-                          teamLeadName={getTeamLeadName()}
-                        />
-                      </>
-                    )}
-                  </div>
-                )}
-                
-                <HeatmapChart data={dailyStats} teamLeads={teamLeads} />
-              </TabsContent>
-              
-              <TabsContent value="workload" className="space-y-6">
-                <ChannelHeatmap data={dailyStats} teamLeads={teamLeads} />
-                
-                <HeatmapChart data={dailyStats} teamLeads={teamLeads} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+        <div className="mt-8">
+          {teamLeads.length > 0 && (
+            <TeamLeadTabs 
+              teamLeads={teamLeads}
+              selectedTeamLead={selectedTeamLead}
+              setSelectedTeamLead={setSelectedTeamLead}
+              showForm={showForm}
+              stats={stats}
+              fetchStats={fetchStats}
+            />
+          )}
+        </div>
+        <div className="mt-8">
+          {selectedTeamLead && (
+            <AgentsList 
+              agents={agents}
+              isLoading={isLoadingAgents}
+              teamLeadId={selectedTeamLead}
+              onAgentUpdated={() => fetchAgents(selectedTeamLead)}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 
