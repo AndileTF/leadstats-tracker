@@ -23,11 +23,11 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              {/* Make TeamOverview the default landing page after login */}
               <Route path="/" element={<TeamOverview />} />
               <Route path="/team-lead-dashboard" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/users" element={<Users />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

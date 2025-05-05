@@ -33,14 +33,14 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {user && (
-        <header className="bg-white shadow-sm">
+        <header className="bg-card shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Team Lead Dashboard</h1>
+            <h1 className="text-2xl font-bold text-foreground">Team Lead Dashboard</h1>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <UserCircle className="h-6 w-6 text-gray-400" />
+                <UserCircle className="h-6 w-6 text-muted-foreground" />
                 <span className="text-sm font-medium">{user.email}</span>
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
