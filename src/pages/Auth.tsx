@@ -13,18 +13,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,42 +30,15 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      if (activeTab === "login") {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast({
-            variant: "destructive",
-            title: "Error signing in",
-            description: error.message || "Invalid credentials. Please try again.",
-          });
-        } else {
-          navigate("/");
-        }
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error signing in",
+          description: error.message || "Invalid credentials. Please try again.",
+        });
       } else {
-        if (!fullName) {
-          toast({
-            variant: "destructive",
-            title: "Registration error",
-            description: "Please provide your full name.",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          toast({
-            variant: "destructive",
-            title: "Error registering",
-            description: error.message || "Unable to register. Please try again.",
-          });
-        } else {
-          toast({
-            title: "Registration successful",
-            description: "Please check your email for verification.",
-          });
-          navigate("/");
-        }
+        navigate("/");
       }
     } catch (error: any) {
       toast({
@@ -82,106 +52,69 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="mx-auto w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Background Logo */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+        <img 
+          src="/lovable-uploads/951c484d-90b4-48f9-a367-28df7d758410.png" 
+          alt="LIQUID Intelligent Technologies"
+          className="max-w-3xl w-full"
+        />
+      </div>
+      
+      <Card className="mx-auto w-full max-w-md relative z-10 bg-white/90 backdrop-blur-sm shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
-          <CardDescription>
-            Sign in to your account or create a new one
+          <CardTitle className="text-2xl font-bold text-center">Welcome to LIQUID</CardTitle>
+          <CardDescription className="text-center">
+            Sign in to your account
           </CardDescription>
         </CardHeader>
-        <Tabs
-          defaultValue="login"
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as "login" | "register")}
-        >
-          <CardContent>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              <TabsContent value="login" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="youremail@example.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </TabsContent>
-              <TabsContent value="register" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full-name">Full Name</Label>
-                  <Input
-                    id="full-name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="youremail@example.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-password">Password</Label>
-                  <Input
-                    id="register-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </TabsContent>
-              <Button
-                type="submit"
-                className={cn("w-full", isLoading && "opacity-70 cursor-not-allowed")}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {activeTab === "login" ? "Signing in..." : "Registering..."}
-                  </>
-                ) : activeTab === "login" ? (
-                  "Sign in"
-                ) : (
-                  "Register"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Tabs>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="youremail@example.com"
+                required
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full"
+              />
+            </div>
+            <Button
+              type="submit"
+              className={cn("w-full bg-[#cf1e90] hover:bg-[#b01a7d]", isLoading && "opacity-70 cursor-not-allowed")}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </Button>
+          </form>
+        </CardContent>
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+          <p>LIQUID Intelligent Technologies © {new Date().getFullYear()}</p>
         </CardFooter>
       </Card>
     </div>
