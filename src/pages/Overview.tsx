@@ -126,13 +126,20 @@ const Overview = () => {
 
   const fetchTeamLeads = async () => {
     try {
+      console.log('Fetching team leads');
       const {
         data,
         error
       } = await supabase.from('team_leads').select('*');
-      if (error) throw error;
-      setTeamLeads(data);
-      if (data.length > 0 && !selectedTeamLead) {
+      
+      if (error) {
+        console.error('Error fetching team leads:', error);
+        throw error;
+      }
+      
+      console.log('Team leads data:', data);
+      setTeamLeads(data || []);
+      if (data && data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
       }
     } catch (error) {
@@ -300,7 +307,11 @@ const Overview = () => {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <AuthLayout>
+        <div className="flex items-center justify-center min-h-screen">Loading...</div>
+      </AuthLayout>
+    );
   }
 
   return (
