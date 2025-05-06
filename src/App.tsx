@@ -11,6 +11,7 @@ import { DateProvider } from "./context/DateContext";
 import { AuthProvider } from "./context/AuthContext";
 import Auth from "./pages/Auth";
 import Users from "./pages/Users";
+import Overview from "./pages/Overview";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
               {/* Make TeamOverview the default landing page after login */}
               <Route path="/" element={<TeamOverview />} />
               <Route path="/team-lead-dashboard" element={<Index />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/users" element={<Users />} />
               <Route path="*" element={<NotFound />} />
