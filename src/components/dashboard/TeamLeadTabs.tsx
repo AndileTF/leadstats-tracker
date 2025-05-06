@@ -6,7 +6,7 @@ import { StatsGrid } from "./StatsGrid";
 import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
 import { Badge } from "@/components/ui/badge";
-import { Users } from "lucide-react";
+import { Users, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AgentsList } from "./AgentsList";
 import { toast } from "@/hooks/use-toast";
@@ -35,16 +35,22 @@ export const TeamLeadTabs = ({
   // Update the selected tab when selectedTeamLead changes from parent
   useEffect(() => {
     if (selectedTeamLead) {
+      console.log(`TeamLeadTabs: Setting selected tab to ${selectedTeamLead}`);
       setSelectedTab(selectedTeamLead);
     } else if (teamLeads.length > 0) {
+      console.log(`TeamLeadTabs: Setting selected tab to first team lead ${teamLeads[0].id}`);
       setSelectedTab(teamLeads[0].id);
     }
   }, [selectedTeamLead, teamLeads]);
 
   // Fetch agents when the selected tab changes
   useEffect(() => {
-    if (!selectedTab) return;
+    if (!selectedTab) {
+      console.log('TeamLeadTabs: No tab selected, skipping agent fetch');
+      return;
+    }
     
+    console.log(`TeamLeadTabs: Selected tab changed to ${selectedTab}, fetching agents`);
     fetchAgents(selectedTab);
     
     // Set up multiple realtime subscriptions
@@ -87,6 +93,7 @@ export const TeamLeadTabs = ({
       .subscribe();
 
     return () => {
+      console.log('TeamLeadTabs: Cleaning up subscriptions');
       supabase.removeChannel(agentsChannel);
       supabase.removeChannel(teamLeadsChannel);
     };
@@ -94,6 +101,7 @@ export const TeamLeadTabs = ({
 
   const fetchAgents = async (teamLeadId: string) => {
     try {
+      console.log(`TeamLeadTabs: Fetching agents for team lead ${teamLeadId}`);
       setIsLoadingAgents(true);
       const { data, error } = await supabase
         .from('agents')
@@ -102,6 +110,7 @@ export const TeamLeadTabs = ({
         .order('start_date', { ascending: false });
 
       if (error) throw error;
+      console.log(`TeamLeadTabs: Fetched ${data?.length || 0} agents`);
       setAgents(data || []);
     } catch (error) {
       console.error('Error fetching agents:', error);
@@ -135,9 +144,27 @@ export const TeamLeadTabs = ({
   const selectedTeamLeadName = teamLeads.find(tl => tl.id === selectedTab)?.name || "";
 
   const handleTabChange = (value: string) => {
+    console.log(`TeamLeadTabs: Tab changed to ${value}`);
     setSelectedTab(value);
     setSelectedTeamLead(value);
   };
+
+  // Log team leads data for debugging
+  console.log('TeamLeadTabs: Team leads data:', teamLeads);
+  console.log('TeamLeadTabs: Selected tab:', selectedTab);
+  console.log('TeamLeadTabs: Selected team lead:', selectedTeamLead);
+
+  if (teamLeads.length === 0) {
+    return (
+      <div className="bg-muted/30 rounded-md p-6 text-center">
+        <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium">No Team Leads Available</h3>
+        <p className="text-muted-foreground mt-2 mb-4">
+          There are no team leads available in the system.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Tabs 
@@ -145,7 +172,7 @@ export const TeamLeadTabs = ({
       onValueChange={handleTabChange}
       className="w-full"
     >
-      <TabsList className="w-full justify-start">
+      <TabsList className="w-full justify-start overflow-x-auto">
         {teamLeads.map((teamLead) => (
           <TabsTrigger
             key={teamLead.id}
