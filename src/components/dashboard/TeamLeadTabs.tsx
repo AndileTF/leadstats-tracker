@@ -1,16 +1,17 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TeamLead, DailyStats, Agent } from "@/types/teamLead";
+import { TeamLead, DailyStats } from "@/types/teamLead";
 import { StatForm } from "@/components/StatForm";
 import { StatsGrid } from "./StatsGrid";
 import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertCircle, Loader2, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { AgentsList } from "./AgentsList";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useAgents } from "@/hooks/use-supabase-data";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeamLeadTabsProps {
   teamLeads: TeamLead[];
@@ -30,9 +31,14 @@ export const TeamLeadTabs = ({
   fetchStats
 }: TeamLeadTabsProps) => {
   const [selectedTab, setSelectedTab] = useState<string>(selectedTeamLead || "");
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
   const [agentError, setAgentError] = useState<string | null>(null);
+
+  const { 
+    data: agents, 
+    isLoading: isLoadingAgents, 
+    error: agentsError, 
+    refetch: refetchAgents 
+  } = useAgents(selectedTab, !!selectedTab);
 
   // Update the selected tab when selectedTeamLead changes from parent
   useEffect(() => {
@@ -49,15 +55,14 @@ export const TeamLeadTabs = ({
     }
   }, [selectedTeamLead, teamLeads, setSelectedTeamLead]);
 
-  // Fetch agents when the selected tab changes
+  // Set up real-time subscription for agents
   useEffect(() => {
     if (!selectedTab) {
-      console.log('TeamLeadTabs: No tab selected, skipping agent fetch');
+      console.log('TeamLeadTabs: No tab selected, skipping agent subscription');
       return;
     }
     
-    console.log(`TeamLeadTabs: Selected tab changed to ${selectedTab}, fetching agents`);
-    fetchAgents(selectedTab);
+    console.log(`TeamLeadTabs: Setting up subscriptions for team lead ${selectedTab}`);
     
     // Set up multiple realtime subscriptions
     const agentsChannel = supabase
@@ -72,7 +77,7 @@ export const TeamLeadTabs = ({
         },
         (payload) => {
           console.log('Agents update received:', payload);
-          fetchAgents(selectedTab);
+          refetchAgents();
           toast({
             title: "Agents Updated",
             description: "The agents list has been refreshed",
@@ -103,35 +108,7 @@ export const TeamLeadTabs = ({
       supabase.removeChannel(agentsChannel);
       supabase.removeChannel(teamLeadsChannel);
     };
-  }, [selectedTab]);
-
-  const fetchAgents = async (teamLeadId: string) => {
-    try {
-      console.log(`TeamLeadTabs: Fetching agents for team lead ${teamLeadId}`);
-      setIsLoadingAgents(true);
-      setAgentError(null);
-      
-      const { data, error } = await supabase
-        .from('agents')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .order('start_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching agents:', error);
-        setAgentError(`Failed to fetch agents: ${error.message}`);
-        throw error;
-      }
-      
-      console.log(`TeamLeadTabs: Fetched ${data?.length || 0} agents`);
-      setAgents(data || []);
-    } catch (error: any) {
-      console.error('Error fetching agents:', error);
-      setAgentError(`Failed to fetch agents: ${error.message}`);
-    } finally {
-      setIsLoadingAgents(false);
-    }
-  };
+  }, [selectedTab, refetchAgents]);
 
   const calculateTotalStats = () => {
     return stats.reduce((acc, curr) => ({
@@ -166,9 +143,18 @@ export const TeamLeadTabs = ({
   const handleRefreshAgents = () => {
     if (selectedTab) {
       console.log("TeamLeadTabs: Manually refreshing agents");
-      fetchAgents(selectedTab);
+      refetchAgents();
     }
   };
+
+  // Set agent error if there's an error from the hook
+  useEffect(() => {
+    if (agentsError) {
+      setAgentError(agentsError);
+    } else {
+      setAgentError(null);
+    }
+  }, [agentsError]);
 
   // Log team leads data for debugging
   console.log('TeamLeadTabs: Team leads data:', teamLeads);
@@ -285,7 +271,7 @@ export const TeamLeadTabs = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => fetchAgents(teamLead.id)}
+                    onClick={handleRefreshAgents}
                     className="mt-2"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
@@ -297,7 +283,7 @@ export const TeamLeadTabs = ({
                   agents={agents} 
                   isLoading={isLoadingAgents} 
                   teamLeadId={teamLead.id}
-                  onAgentUpdated={() => fetchAgents(teamLead.id)}
+                  onAgentUpdated={handleRefreshAgents}
                 />
               )}
             </div>
