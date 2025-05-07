@@ -16,6 +16,11 @@ export const DashboardHeader = ({
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
 
+  const handleNavigateToOverview = () => {
+    console.log("Navigating to Team Overview (/)");
+    navigate('/');
+  };
+
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center">
@@ -43,7 +48,7 @@ export const DashboardHeader = ({
         </Button>
         <Button
           variant="outline"
-          onClick={() => navigate('/')}
+          onClick={handleNavigateToOverview}
           className="bg-primary/20 hover:bg-primary/30 text-primary"
         >
           Team Overview
