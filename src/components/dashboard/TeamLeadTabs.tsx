@@ -6,10 +6,11 @@ import { StatsGrid } from "./StatsGrid";
 import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertCircle, Loader2 } from "lucide-react";
+import { Users, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AgentsList } from "./AgentsList";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface TeamLeadTabsProps {
   teamLeads: TeamLead[];
@@ -31,17 +32,22 @@ export const TeamLeadTabs = ({
   const [selectedTab, setSelectedTab] = useState<string>(selectedTeamLead || "");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
 
   // Update the selected tab when selectedTeamLead changes from parent
   useEffect(() => {
+    console.log(`TeamLeadTabs: useEffect for selectedTeamLead: ${selectedTeamLead}`);
+    console.log(`TeamLeadTabs: Current teamLeads:`, teamLeads.map(tl => `${tl.id} (${tl.name})`));
+    
     if (selectedTeamLead) {
       console.log(`TeamLeadTabs: Setting selected tab to ${selectedTeamLead}`);
       setSelectedTab(selectedTeamLead);
     } else if (teamLeads.length > 0) {
       console.log(`TeamLeadTabs: Setting selected tab to first team lead ${teamLeads[0].id}`);
       setSelectedTab(teamLeads[0].id);
+      setSelectedTeamLead(teamLeads[0].id);
     }
-  }, [selectedTeamLead, teamLeads]);
+  }, [selectedTeamLead, teamLeads, setSelectedTeamLead]);
 
   // Fetch agents when the selected tab changes
   useEffect(() => {
@@ -103,17 +109,25 @@ export const TeamLeadTabs = ({
     try {
       console.log(`TeamLeadTabs: Fetching agents for team lead ${teamLeadId}`);
       setIsLoadingAgents(true);
+      setAgentError(null);
+      
       const { data, error } = await supabase
         .from('agents')
         .select('*')
         .eq('team_lead_id', teamLeadId)
         .order('start_date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching agents:', error);
+        setAgentError(`Failed to fetch agents: ${error.message}`);
+        throw error;
+      }
+      
       console.log(`TeamLeadTabs: Fetched ${data?.length || 0} agents`);
       setAgents(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching agents:', error);
+      setAgentError(`Failed to fetch agents: ${error.message}`);
     } finally {
       setIsLoadingAgents(false);
     }
@@ -149,6 +163,13 @@ export const TeamLeadTabs = ({
     setSelectedTeamLead(value);
   };
 
+  const handleRefreshAgents = () => {
+    if (selectedTab) {
+      console.log("TeamLeadTabs: Manually refreshing agents");
+      fetchAgents(selectedTab);
+    }
+  };
+
   // Log team leads data for debugging
   console.log('TeamLeadTabs: Team leads data:', teamLeads);
   console.log('TeamLeadTabs: Selected tab:', selectedTab);
@@ -162,6 +183,15 @@ export const TeamLeadTabs = ({
         <p className="text-muted-foreground mt-2 mb-4">
           There are no team leads available in the system.
         </p>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => window.location.reload()}
+          className="mx-auto"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh Page
+        </Button>
       </div>
     );
   }
@@ -172,23 +202,35 @@ export const TeamLeadTabs = ({
       onValueChange={handleTabChange}
       className="w-full"
     >
-      <TabsList className="w-full justify-start overflow-x-auto">
-        {teamLeads.map((teamLead) => (
-          <TabsTrigger
-            key={teamLead.id}
-            value={teamLead.id}
-            className="flex items-center gap-2"
-          >
-            <span>{teamLead.name}</span>
-            {teamLead.assigned_agents_count !== undefined && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span>{teamLead.assigned_agents_count}</span>
-              </Badge>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      <div className="flex justify-between items-center mb-2">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          {teamLeads.map((teamLead) => (
+            <TabsTrigger
+              key={teamLead.id}
+              value={teamLead.id}
+              className="flex items-center gap-2"
+            >
+              <span>{teamLead.name || 'Unnamed Lead'}</span>
+              {teamLead.assigned_agents_count !== undefined && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span>{teamLead.assigned_agents_count}</span>
+                </Badge>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={handleRefreshAgents}
+          className="ml-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          <span className="sr-only">Refresh</span>
+        </Button>
+      </div>
 
       {teamLeads.map((teamLead) => (
         <TabsContent key={teamLead.id} value={teamLead.id}>
@@ -200,25 +242,65 @@ export const TeamLeadTabs = ({
           </div>
 
           {showForm && selectedTeamLead === teamLead.id && (
-            <StatForm teamLeadId={teamLead.id} onSuccess={fetchStats} />
+            <div className="mb-6">
+              <StatForm teamLeadId={teamLead.id} onSuccess={fetchStats} />
+            </div>
           )}
 
-          {/* Only render LineChart if we're on the selected team lead's tab */}
+          {/* Only render LineChart if we're on the selected team lead's tab and have stats */}
           {selectedTab === teamLead.id && stats.length > 0 && (
-            <LineChart data={stats} teamLeadName={teamLead.name} />
+            <LineChart data={stats} teamLeadName={teamLead.name || 'Unnamed Lead'} />
           )}
 
-          {/* Stats Grid moved above Agents List */}
+          {/* Empty state for no stats */}
+          {selectedTab === teamLead.id && stats.length === 0 && (
+            <div className="bg-muted/30 rounded-md p-6 text-center mb-6">
+              <h3 className="text-lg font-medium">No Stats Available</h3>
+              <p className="text-muted-foreground mt-2 mb-4">
+                There are no statistics available for this time period.
+              </p>
+              {showForm ? (
+                <p className="text-sm">Use the form above to add daily stats.</p>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedTeamLead(teamLead.id)}
+                >
+                  Add Stats
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Stats Grid always shown, even with empty data */}
           <StatsGrid totalStats={totalStats} statsCount={statsCount} />
 
           {/* Display agents list */}
           {selectedTab === teamLead.id && (
-            <AgentsList 
-              agents={agents} 
-              isLoading={isLoadingAgents} 
-              teamLeadId={teamLead.id}
-              onAgentUpdated={() => fetchAgents(teamLead.id)}
-            />
+            <div className="mt-6">
+              {agentError ? (
+                <div className="bg-destructive/10 border border-destructive rounded-md p-4 mb-4">
+                  <p className="text-destructive text-sm">{agentError}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fetchAgents(teamLead.id)}
+                    className="mt-2"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Try Again
+                  </Button>
+                </div>
+              ) : (
+                <AgentsList 
+                  agents={agents} 
+                  isLoading={isLoadingAgents} 
+                  teamLeadId={teamLead.id}
+                  onAgentUpdated={() => fetchAgents(teamLead.id)}
+                />
+              )}
+            </div>
           )}
         </TabsContent>
       ))}

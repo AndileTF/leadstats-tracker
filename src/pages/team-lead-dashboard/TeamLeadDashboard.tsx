@@ -7,7 +7,8 @@ import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -18,8 +19,11 @@ const TeamLeadDashboard = () => {
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const { dateRange } = useDateRange();
 
+  // Debug logs for component mount and state changes
   useEffect(() => {
-    console.log('TeamLeadDashboard component mounted');
+    console.log('TeamLeadDashboard component mounted or dateRange changed');
+    console.log('Current dateRange:', dateRange);
+    
     fetchTeamLeads();
     
     // Set up realtime subscription for team_leads table
@@ -47,9 +51,10 @@ const TeamLeadDashboard = () => {
       console.log('Cleaning up TeamLeadDashboard subscriptions');
       supabase.removeChannel(teamLeadsChannel);
     };
-  }, []);
+  }, [dateRange]);
 
   useEffect(() => {
+    console.log('Selected team lead changed to:', selectedTeamLead);
     if (!selectedTeamLead) return;
     
     console.log(`Setting up subscriptions for selected team lead: ${selectedTeamLead}`);
@@ -116,6 +121,7 @@ const TeamLeadDashboard = () => {
   const fetchTeamLeads = async () => {
     try {
       console.log('Fetching team leads...');
+      setIsLoading(true);
       setLoadingError(null);
       
       const { data, error } = await supabase
@@ -128,6 +134,11 @@ const TeamLeadDashboard = () => {
       }
 
       console.log('Team leads fetched:', data);
+      
+      if (!data || data.length === 0) {
+        console.warn('No team leads found in database');
+      }
+      
       setTeamLeads(data || []);
       
       if (data && data.length > 0) {
@@ -138,12 +149,12 @@ const TeamLeadDashboard = () => {
       } else {
         console.log('No team leads found');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch team leads:', error);
-      setLoadingError('Failed to fetch team leads');
+      setLoadingError('Failed to fetch team leads: ' + error.message);
       toast({
         title: "Error",
-        description: "Failed to fetch team leads",
+        description: "Failed to fetch team leads: " + error.message,
         variant: "destructive",
       });
     } finally {
@@ -170,6 +181,8 @@ const TeamLeadDashboard = () => {
         dateArray.push(format(date, 'yyyy-MM-dd'));
       }
 
+      console.log('Generated date array:', dateArray);
+
       // Fetch daily stats
       const { data: dailyStats, error: dailyStatsError } = await supabase
         .from('daily_stats')
@@ -179,8 +192,12 @@ const TeamLeadDashboard = () => {
         .lte('date', dateRange.endDate)
         .order('date', { ascending: false });
 
-      if (dailyStatsError) throw dailyStatsError;
+      if (dailyStatsError) {
+        console.error('Error fetching daily stats:', dailyStatsError);
+        throw dailyStatsError;
+      }
       console.log('Daily stats fetched:', dailyStats?.length, 'records');
+      console.log('First few records:', dailyStats?.slice(0, 3));
 
       // Fetch survey tickets
       const { data: surveyTickets, error: surveyError } = await supabase
@@ -190,7 +207,10 @@ const TeamLeadDashboard = () => {
         .gte('date', dateRange.startDate)
         .lte('date', dateRange.endDate);
 
-      if (surveyError) throw surveyError;
+      if (surveyError) {
+        console.error('Error fetching survey tickets:', surveyError);
+        throw surveyError;
+      }
       console.log('Survey tickets fetched:', surveyTickets?.length, 'records');
 
       // Create a map of dates to survey ticket counts
@@ -223,17 +243,22 @@ const TeamLeadDashboard = () => {
 
       console.log('Combined stats prepared:', combinedStats.length, 'records');
       setStats(combinedStats);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stats:', error);
-      setLoadingError('Failed to fetch stats data');
+      setLoadingError('Failed to fetch stats data: ' + error.message);
       toast({
         title: "Error",
-        description: "Failed to fetch stats",
+        description: "Failed to fetch stats: " + error.message,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    console.log('Manual refresh requested');
+    fetchTeamLeads();
   };
 
   if (isLoading && teamLeads.length === 0) {
@@ -255,21 +280,40 @@ const TeamLeadDashboard = () => {
         />
         
         {loadingError ? (
-          <div className="bg-destructive/10 border border-destructive rounded-md p-4">
-            <p className="text-destructive font-medium">{loadingError}</p>
-            <button 
-              className="mt-2 text-sm underline"
-              onClick={fetchTeamLeads}
+          <div className="bg-destructive/10 border border-destructive rounded-md p-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+              <div>
+                <p className="text-destructive font-medium">{loadingError}</p>
+                <p className="text-destructive/70 text-sm mt-1">
+                  There was an error loading the dashboard data. Please check console for more details.
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={handleRefresh}
+              className="w-full sm:w-auto"
             >
               Try again
-            </button>
+            </Button>
           </div>
         ) : teamLeads.length === 0 ? (
-          <div className="text-center p-8 bg-muted/50 rounded-lg border">
-            <p className="text-lg font-medium">No team leads found</p>
-            <p className="text-muted-foreground mt-2">
-              There are no team leads available in the system.
-            </p>
+          <div className="text-center p-8 bg-muted/50 rounded-lg border space-y-4">
+            <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground" />
+            <div>
+              <p className="text-lg font-medium">No team leads found</p>
+              <p className="text-muted-foreground mt-2">
+                There are no team leads available in the database.
+              </p>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={handleRefresh}
+              className="mt-4"
+            >
+              Refresh data
+            </Button>
           </div>
         ) : (
           <DashboardContent
