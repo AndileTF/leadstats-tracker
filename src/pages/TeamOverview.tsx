@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLeadOverview, DailyStats, TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
 import { DateFilter } from "@/components/dashboard/DateFilter";
@@ -27,147 +27,111 @@ const TeamOverview = () => {
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   
   useEffect(() => {
-    console.log("TeamOverview component mounted");
-    
-    const setupRealTimeSubscriptions = () => {
-      console.log("Setting up real-time subscriptions");
-      
-      const dailyStatsChannel = supabase
-        .channel('overview-daily-stats-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'daily_stats'
-          },
-          (payload) => {
-            console.log('Real-time update received for daily_stats:', payload);
-            const changeDate = (payload.new as any).date;
-            if (dateRange.startDate && dateRange.endDate && 
-                changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-              fetchOverview();
-              fetchDailyStats();
-              toast({
-                title: "Data Updated",
-                description: "Dashboard data has been refreshed"
-              });
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log("Daily stats channel status:", status);
-        });
-        
-      const surveyTicketsChannel = supabase
-        .channel('overview-survey-tickets-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'After Call Survey Tickets'
-          },
-          (payload) => {
-            console.log('Real-time update received for survey tickets:', payload);
-            const changeDate = (payload.new as any).date;
-            if (dateRange.startDate && dateRange.endDate && 
-                changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-              fetchOverview();
-              fetchDailyStats();
-              toast({
-                title: "Survey Data Updated",
-                description: "Survey data has been refreshed"
-              });
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log("Survey tickets channel status:", status);
-        });
-        
-      const teamLeadsChannel = supabase
-        .channel('overview-team-leads-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'team_leads'
-          },
-          (payload) => {
-            console.log('Real-time update received for team_leads:', payload);
-            fetchTeamLeads();
+    const dailyStatsChannel = supabase
+      .channel('overview-daily-stats-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_stats'
+        },
+        (payload) => {
+          console.log('Real-time update received for daily_stats:', payload);
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
             fetchOverview();
+            fetchDailyStats();
             toast({
-              title: "Team Leads Updated",
-              description: "Team leads data has been refreshed"
+              title: "Data Updated",
+              description: "Dashboard data has been refreshed"
             });
           }
-        )
-        .subscribe((status) => {
-          console.log("Team leads channel status:", status);
-        });
-        
-      const agentsChannel = supabase
-        .channel('overview-agents-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'agents'
-          },
-          (payload) => {
-            console.log('Real-time update received for agents:', payload);
-            fetchTeamLeads();
-          }
-        )
-        .subscribe((status) => {
-          console.log("Agents channel status:", status);
-        });
+        }
+      )
+      .subscribe();
       
-      return {
-        dailyStatsChannel,
-        surveyTicketsChannel,
-        teamLeadsChannel,
-        agentsChannel
-      };
-    };
-    
-    const channels = setupRealTimeSubscriptions();
-    
+    const surveyTicketsChannel = supabase
+      .channel('overview-survey-tickets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'After Call Survey Tickets'
+        },
+        (payload) => {
+          console.log('Real-time update received for survey tickets:', payload);
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchOverview();
+            fetchDailyStats();
+            toast({
+              title: "Survey Data Updated",
+              description: "Survey data has been refreshed"
+            });
+          }
+        }
+      )
+      .subscribe();
+      
+    const teamLeadsChannel = supabase
+      .channel('overview-team-leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_leads'
+        },
+        (payload) => {
+          console.log('Real-time update received for team_leads:', payload);
+          fetchTeamLeads();
+          fetchOverview();
+          toast({
+            title: "Team Leads Updated",
+            description: "Team leads data has been refreshed"
+          });
+        }
+      )
+      .subscribe();
+      
+    const agentsChannel = supabase
+      .channel('overview-agents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agents'
+        },
+        (payload) => {
+          console.log('Real-time update received for agents:', payload);
+          fetchTeamLeads();
+        }
+      )
+      .subscribe();
+      
     fetchTeamLeads();
     fetchOverview();
     fetchDailyStats();
     
     return () => {
-      console.log("Cleaning up real-time subscriptions");
-      
-      // Clean up all channels
-      Object.values(channels).forEach(channel => {
-        supabase.removeChannel(channel);
-      });
+      supabase.removeChannel(dailyStatsChannel);
+      supabase.removeChannel(surveyTicketsChannel);
+      supabase.removeChannel(teamLeadsChannel);
+      supabase.removeChannel(agentsChannel);
     };
   }, [dateRange]);
 
   const fetchTeamLeads = async () => {
     try {
-      console.log("Fetching team leads...");
-      
       const {
         data,
         error
       } = await supabase.from('team_leads').select('*');
-      
-      if (error) {
-        console.error("Error fetching team leads:", error);
-        throw error;
-      }
-      
-      console.log("Team leads fetched successfully:", data);
+      if (error) throw error;
       setTeamLeads(data);
-      
       if (data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
       }
@@ -189,12 +153,6 @@ const TeamOverview = () => {
       // Clear the previous overview data when fetching new data
       setOverview([]);
       
-      if (!dateRange.startDate || !dateRange.endDate) {
-        console.log("Date range not set, skipping fetch");
-        setIsLoading(false);
-        return;
-      }
-      
       const {
         data: dailyStats,
         error: dailyStatsError
@@ -215,12 +173,7 @@ const TeamOverview = () => {
         .gte('date', dateRange.startDate)
         .lte('date', dateRange.endDate);
         
-      if (dailyStatsError) {
-        console.error("Error fetching daily stats:", dailyStatsError);
-        throw dailyStatsError;
-      }
-      
-      console.log("Daily stats fetched:", dailyStats?.length || 0, "records");
+      if (dailyStatsError) throw dailyStatsError;
       
       const {
         data: surveyTickets,
@@ -230,12 +183,10 @@ const TeamOverview = () => {
         .gte('date', dateRange.startDate)
         .lte('date', dateRange.endDate);
         
-      if (surveyError) {
-        console.error("Error fetching survey tickets:", surveyError);
-        throw surveyError;
-      }
+      if (surveyError) throw surveyError;
       
-      console.log("Survey tickets fetched:", surveyTickets?.length || 0, "records");
+      console.log('Fetched daily stats for date range:', dateRange, dailyStats);
+      console.log('Fetched survey tickets for date range:', dateRange, surveyTickets);
       
       const surveyTicketMap = surveyTickets.reduce((acc: {
         [key: string]: number;
@@ -299,7 +250,7 @@ const TeamOverview = () => {
       
       // Convert map to array
       const overviewArray = Object.values(overviewMap);
-      console.log('Processed overview data:', overviewArray.length, "team leads");
+      console.log('Processed overview data:', overviewArray);
       
       setOverview(overviewArray);
     } catch (error) {
@@ -316,13 +267,6 @@ const TeamOverview = () => {
 
   const fetchDailyStats = async () => {
     try {
-      console.log("Fetching daily stats...");
-      
-      if (!dateRange.startDate || !dateRange.endDate) {
-        console.log("Date range not set, skipping daily stats fetch");
-        return;
-      }
-      
       const {
         data,
         error
@@ -333,12 +277,7 @@ const TeamOverview = () => {
           ascending: true
         });
         
-      if (error) {
-        console.error("Error fetching daily stats:", error);
-        throw error;
-      }
-      
-      console.log("Daily stats detail fetched:", data?.length || 0, "records");
+      if (error) throw error;
       setDailyStats(data);
     } catch (error) {
       console.error('Error fetching daily stats:', error);
@@ -372,7 +311,6 @@ const TeamOverview = () => {
         <Card>
           <CardContent className="p-6">
             <DateFilter onApplyFilter={() => {
-              console.log("Date filter applied, refreshing data...");
               fetchOverview();
               fetchDailyStats();
             }} />

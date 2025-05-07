@@ -9,11 +9,6 @@ import { useNavigate } from 'react-router-dom';
 export const TeamOverviewHeader = () => {
   const navigate = useNavigate();
 
-  const handleNavigation = () => {
-    console.log("Navigating to TL Portal (/team-lead-dashboard)");
-    navigate('/team-lead-dashboard');
-  };
-
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center">
@@ -33,7 +28,7 @@ export const TeamOverviewHeader = () => {
       </div>
       <Button 
         variant="default"
-        onClick={handleNavigation}
+        onClick={() => navigate('/team-lead-dashboard')}
         className="bg-[#cf1e90] hover:bg-[#e24bab]"
       >
         TL Portal
