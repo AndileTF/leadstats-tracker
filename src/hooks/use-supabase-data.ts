@@ -133,20 +133,43 @@ export function useDailyStats(
   endDate: string | null,
   enabled: boolean = true
 ) {
+  const [lastQuery, setLastQuery] = useState<{ teamLeadId: string | null, startDate: string | null, endDate: string | null }>({ 
+    teamLeadId, startDate, endDate 
+  });
+
   return useFetchData<DailyStats>(
     'daily_stats',
     async () => {
       if (!teamLeadId || !startDate || !endDate || !enabled) {
+        console.log("Missing parameters for daily stats query:", { teamLeadId, startDate, endDate, enabled });
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('daily_stats')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false });
+      // Keep a record of this query for debugging
+      setLastQuery({ teamLeadId, startDate, endDate });
+      
+      console.log(`Fetching daily stats for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('daily_stats')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false });
+          
+        console.log(`Daily stats query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+          
+        return response;
+      } catch (err) {
+        console.error("Error executing daily stats query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );
@@ -162,15 +185,31 @@ export function useSurveyTickets(
     'After Call Survey Tickets',
     async () => {
       if (!teamLeadId || !startDate || !endDate || !enabled) {
+        console.log("Missing parameters for survey tickets query:", { teamLeadId, startDate, endDate, enabled });
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('After Call Survey Tickets')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('date', startDate)
-        .lte('date', endDate);
+      console.log(`Fetching survey tickets for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('After Call Survey Tickets')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('date', startDate)
+          .lte('date', endDate);
+          
+        console.log(`Survey tickets query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+          
+        return response;
+      } catch (err) {
+        console.error("Error executing survey tickets query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );

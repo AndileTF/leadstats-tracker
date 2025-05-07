@@ -16,6 +16,7 @@ const TeamLeadDashboard = () => {
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   const [stats, setStats] = useState<DailyStats[]>([]);
   const { dateRange } = useDateRange();
+  const [queryLogsVisible, setQueryLogsVisible] = useState(false);
   
   // Fetch team leads using our custom hook
   const { 
@@ -25,10 +26,13 @@ const TeamLeadDashboard = () => {
     refetch: refetchTeamLeads 
   } = useTeamLeads();
   
+  console.log("Current date range from context:", dateRange);
+  
   // Fetch daily stats for the selected team lead
   const { 
     data: dailyStats, 
-    isLoading: isLoadingDailyStats, 
+    isLoading: isLoadingDailyStats,
+    error: dailyStatsError,
     refetch: refetchDailyStats 
   } = useDailyStats(
     selectedTeamLead, 
@@ -41,6 +45,7 @@ const TeamLeadDashboard = () => {
   const { 
     data: surveyTickets,
     isLoading: isLoadingSurveyTickets,
+    error: surveyTicketsError,
     refetch: refetchSurveyTickets
   } = useSurveyTickets(
     selectedTeamLead, 
@@ -67,7 +72,11 @@ const TeamLeadDashboard = () => {
       return;
     }
     
-    console.log('Processing daily stats and survey tickets data');
+    console.log('Processing daily stats and survey tickets data', {
+      dailyStats: dailyStats.length,
+      surveyTickets: surveyTickets?.length || 0,
+      dateRange
+    });
     
     try {
       // Sort data by date in ascending order
@@ -82,8 +91,25 @@ const TeamLeadDashboard = () => {
       }, {}) || {};
       
       // First, get all unique dates in the range
+      if (!dateRange.startDate || !dateRange.endDate) {
+        console.error("Missing date range for processing stats");
+        setStats([]);
+        return;
+      }
+      
       const startDate = new Date(dateRange.startDate);
       const endDate = new Date(dateRange.endDate);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error("Invalid date range", { startDate, endDate, dateRange });
+        toast({
+          title: "Error",
+          description: "Invalid date range selected",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const dateArray: string[] = [];
       for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
         dateArray.push(format(date, 'yyyy-MM-dd'));
@@ -210,12 +236,37 @@ const TeamLeadDashboard = () => {
   };
   
   const fetchStats = () => {
-    console.log('Fetching stats...');
+    console.log('Fetching stats...', { 
+      selectedTeamLead, 
+      startDate: dateRange.startDate, 
+      endDate: dateRange.endDate 
+    });
     refetchDailyStats();
     refetchSurveyTickets();
+    
+    // Show temporary toast to confirm fetching
+    toast({
+      title: "Fetching Data",
+      description: `Requesting data for ${dateRange.startDate} to ${dateRange.endDate}`,
+    });
   };
 
   const isLoading = isLoadingTeamLeads && teamLeads.length === 0;
+  const hasDataErrors = dailyStatsError || surveyTicketsError;
+  
+  // Diagnostic information
+  const diagnosticInfo = {
+    selectedTeamLead,
+    dateRange,
+    dailyStatsCount: dailyStats.length,
+    surveyTicketsCount: surveyTickets?.length || 0,
+    isLoadingDailyStats,
+    isLoadingSurveyTickets,
+    errors: {
+      dailyStats: dailyStatsError,
+      surveyTickets: surveyTicketsError
+    }
+  };
 
   if (isLoading) {
     return (
@@ -272,14 +323,53 @@ const TeamLeadDashboard = () => {
             </Button>
           </div>
         ) : (
-          <DashboardContent
-            teamLeads={teamLeads}
-            selectedTeamLead={selectedTeamLead}
-            setSelectedTeamLead={setSelectedTeamLead}
-            showForm={showForm}
-            stats={stats}
-            fetchStats={fetchStats}
-          />
+          <>
+            {hasDataErrors && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="text-amber-800 font-medium">Data retrieval issues detected</p>
+                    <p className="text-amber-700 text-sm mt-1">
+                      There was an issue fetching some data. Please check the date range and try again.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2 text-xs"
+                      onClick={() => setQueryLogsVisible(!queryLogsVisible)}
+                    >
+                      {queryLogsVisible ? 'Hide Details' : 'Show Details'}
+                    </Button>
+                    
+                    {queryLogsVisible && (
+                      <pre className="bg-slate-800 text-white p-2 rounded text-xs mt-2 overflow-auto max-h-48">
+                        {JSON.stringify(diagnosticInfo, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button 
+                    variant="default"
+                    size="sm"
+                    onClick={fetchStats}
+                  >
+                    Retry Data Fetch
+                  </Button>
+                </div>
+              </div>
+            )}
+              
+            <DashboardContent
+              teamLeads={teamLeads}
+              selectedTeamLead={selectedTeamLead}
+              setSelectedTeamLead={setSelectedTeamLead}
+              showForm={showForm}
+              stats={stats}
+              fetchStats={fetchStats}
+            />
+          </>
         )}
       </div>
     </div>
