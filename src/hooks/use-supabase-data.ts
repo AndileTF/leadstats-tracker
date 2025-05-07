@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -100,10 +99,13 @@ export function useFetchData<T>(
 export function useTeamLeads() {
   return useFetchData<TeamLead>(
     'team_leads',
-    () => supabase
-      .from('team_leads')
-      .select('*')
-      .order('name', { ascending: true })
+    async () => {
+      // Adding await here to fix the TypeScript error
+      return await supabase
+        .from('team_leads')
+        .select('*')
+        .order('name', { ascending: true });
+    }
   );
 }
 
@@ -115,7 +117,7 @@ export function useAgents(teamLeadId: string | null, enabled: boolean = true) {
         return { data: [], error: null };
       }
       
-      return supabase
+      return await supabase
         .from('agents')
         .select('*')
         .eq('team_lead_id', teamLeadId)
@@ -138,7 +140,7 @@ export function useDailyStats(
         return { data: [], error: null };
       }
       
-      return supabase
+      return await supabase
         .from('daily_stats')
         .select('*')
         .eq('team_lead_id', teamLeadId)
@@ -163,7 +165,7 @@ export function useSurveyTickets(
         return { data: [], error: null };
       }
       
-      return supabase
+      return await supabase
         .from('After Call Survey Tickets')
         .select('*')
         .eq('team_lead_id', teamLeadId)
@@ -177,9 +179,12 @@ export function useSurveyTickets(
 export function useTeamLeadOverview() {
   return useFetchData<TeamLeadOverview>(
     'team_metrics',
-    () => supabase
-      .from('team_metrics')
-      .select('*')
+    async () => {
+      // Adding await here to fix the TypeScript error
+      return await supabase
+        .from('team_metrics')
+        .select('*');
+    }
   );
 }
 
