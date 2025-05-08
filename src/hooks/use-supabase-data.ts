@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -70,7 +69,7 @@ export function useFetchData<T>(
         console.log(`${tableName}: Query returned null data`);
       }
     } catch (err: any) {
-      console.error(`${logPrefix}Error in useFetchData(${tableName}):`, err);
+      console.error(`Error in useFetchData(${tableName}):`, err);
       setError(`Failed to fetch data: ${err.message}`);
     } finally {
       setIsLoading(false);
@@ -464,17 +463,35 @@ export function useTeamLeadOverview() {
       console.log('Fetching team metrics overview');
       
       try {
-        // Adding await here to fix the TypeScript error
+        // Map the returned team_metrics data to match the TeamLeadOverview type
         const response = await supabase
           .from('team_metrics')
           .select('*');
-          
+        
         console.log(`Team metrics overview response:`, {
           data: response.data ? response.data.length : 0,
           error: response.error
         });
         
-        return response;
+        // Transform the data to match the TeamLeadOverview type
+        if (response.data) {
+          const transformedData: TeamLeadOverview[] = response.data.map(item => ({
+            team_lead_id: item.team_lead_id || '',
+            name: item.team_lead_name || null,
+            total_days: 0,  // Default value as it's required by TeamLeadOverview
+            total_calls: item.total_calls || 0,
+            total_emails: item.total_emails || 0,
+            total_live_chat: item.total_chats || 0, // Map total_chats to total_live_chat
+            total_escalations: item.total_escalations || 0,
+            total_qa_assessments: item.total_qa_assessments || 0,
+            total_survey_tickets: item.total_survey_tickets || 0,
+            average_sla: null // Default value as it might be required
+          }));
+          
+          return { data: transformedData, error: response.error };
+        }
+        
+        return { data: [], error: response.error };
       } catch (err) {
         console.error("Error executing team metrics query:", err);
         throw err;
