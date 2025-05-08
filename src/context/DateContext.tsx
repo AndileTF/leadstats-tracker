@@ -25,6 +25,8 @@ const DateContext = createContext<DateContextType>({
 export const DateProvider = ({ children }: { children: ReactNode }) => {
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
 
+  console.log("DateProvider initialized with range:", dateRange);
+
   return (
     <DateContext.Provider value={{ dateRange, setDateRange }}>
       {children}

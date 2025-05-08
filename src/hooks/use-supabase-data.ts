@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -34,7 +35,7 @@ export function useFetchData<T>(
             description: `Failed to fetch data from ${tableName}: ${error.message}`,
             variant: "destructive",
           });
-          throw error;
+          return;
         }
         
         console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}`);
@@ -70,7 +71,7 @@ export function useFetchData<T>(
           description: `Failed to refetch data from ${tableName}: ${error.message}`,
           variant: "destructive",
         });
-        throw error;
+        return;
       }
       
       console.log(`Successfully refetched ${data?.length || 0} records from ${tableName}`);
@@ -133,10 +134,6 @@ export function useDailyStats(
   endDate: string | null,
   enabled: boolean = true
 ) {
-  const [lastQuery, setLastQuery] = useState<{ teamLeadId: string | null, startDate: string | null, endDate: string | null }>({ 
-    teamLeadId, startDate, endDate 
-  });
-
   return useFetchData<DailyStats>(
     'daily_stats',
     async () => {
@@ -144,9 +141,6 @@ export function useDailyStats(
         console.log("Missing parameters for daily stats query:", { teamLeadId, startDate, endDate, enabled });
         return { data: [], error: null };
       }
-      
-      // Keep a record of this query for debugging
-      setLastQuery({ teamLeadId, startDate, endDate });
       
       console.log(`Fetching daily stats for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
       
@@ -215,6 +209,126 @@ export function useSurveyTickets(
   );
 }
 
+export function useCalls(
+  teamLeadId: string | null, 
+  startDate: string | null, 
+  endDate: string | null,
+  enabled: boolean = true
+) {
+  return useFetchData<any>(
+    'Calls',
+    async () => {
+      if (!teamLeadId || !startDate || !endDate || !enabled) {
+        return { data: [], error: null };
+      }
+      
+      return await supabase
+        .from('Calls')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .gte('Date', startDate)
+        .lte('Date', endDate);
+    },
+    [teamLeadId, startDate, endDate, enabled]
+  );
+}
+
+export function useEmails(
+  teamLeadId: string | null, 
+  startDate: string | null, 
+  endDate: string | null,
+  enabled: boolean = true
+) {
+  return useFetchData<any>(
+    'Emails',
+    async () => {
+      if (!teamLeadId || !startDate || !endDate || !enabled) {
+        return { data: [], error: null };
+      }
+      
+      return await supabase
+        .from('Emails')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .gte('Date', startDate)
+        .lte('Date', endDate);
+    },
+    [teamLeadId, startDate, endDate, enabled]
+  );
+}
+
+export function useLiveChat(
+  teamLeadId: string | null, 
+  startDate: string | null, 
+  endDate: string | null,
+  enabled: boolean = true
+) {
+  return useFetchData<any>(
+    'Live Chat',
+    async () => {
+      if (!teamLeadId || !startDate || !endDate || !enabled) {
+        return { data: [], error: null };
+      }
+      
+      return await supabase
+        .from('Live Chat')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .gte('Date', startDate)
+        .lte('Date', endDate);
+    },
+    [teamLeadId, startDate, endDate, enabled]
+  );
+}
+
+export function useEscalations(
+  teamLeadId: string | null, 
+  startDate: string | null, 
+  endDate: string | null,
+  enabled: boolean = true
+) {
+  return useFetchData<any>(
+    'Escalations',
+    async () => {
+      if (!teamLeadId || !startDate || !endDate || !enabled) {
+        return { data: [], error: null };
+      }
+      
+      return await supabase
+        .from('Escalations')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .gte('Date', startDate)
+        .lte('Date', endDate);
+    },
+    [teamLeadId, startDate, endDate, enabled]
+  );
+}
+
+export function useQAAssessments(
+  teamLeadId: string | null, 
+  startDate: string | null, 
+  endDate: string | null,
+  enabled: boolean = true
+) {
+  return useFetchData<any>(
+    'QA Table',
+    async () => {
+      if (!teamLeadId || !startDate || !endDate || !enabled) {
+        return { data: [], error: null };
+      }
+      
+      return await supabase
+        .from('QA Table')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .gte('Date', startDate)
+        .lte('Date', endDate);
+    },
+    [teamLeadId, startDate, endDate, enabled]
+  );
+}
+
 export function useTeamLeadOverview() {
   return useFetchData<TeamLeadOverview>(
     'team_metrics',
@@ -250,7 +364,7 @@ export function useDatabaseConnection() {
         console.error('Database connection error:', error);
         setConnectionError(`Failed to connect to database: ${error.message}`);
         setIsConnected(false);
-        throw error;
+        return false;
       }
       
       console.log('Database connection successful');

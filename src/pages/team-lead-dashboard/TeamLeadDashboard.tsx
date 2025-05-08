@@ -8,7 +8,16 @@ import { useDateRange } from '@/context/DateContext';
 import { format } from 'date-fns';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useTeamLeads, useDailyStats, useSurveyTickets } from '@/hooks/use-supabase-data';
+import { 
+  useTeamLeads, 
+  useDailyStats, 
+  useSurveyTickets,
+  useCalls,
+  useEmails,
+  useLiveChat,
+  useEscalations,
+  useQAAssessments
+} from '@/hooks/use-supabase-data';
 import { supabase } from "@/integrations/supabase/client";
 
 const TeamLeadDashboard = () => {
@@ -18,6 +27,11 @@ const TeamLeadDashboard = () => {
   const { dateRange } = useDateRange();
   const [queryLogsVisible, setQueryLogsVisible] = useState(false);
   
+  // Log current date range for debugging
+  useEffect(() => {
+    console.log("TeamLeadDashboard: Current date range:", dateRange);
+  }, [dateRange]);
+  
   // Fetch team leads using our custom hook
   const { 
     data: teamLeads, 
@@ -25,8 +39,6 @@ const TeamLeadDashboard = () => {
     error: teamLeadsError, 
     refetch: refetchTeamLeads 
   } = useTeamLeads();
-  
-  console.log("Current date range from context:", dateRange);
   
   // Fetch daily stats for the selected team lead
   const { 
@@ -53,6 +65,61 @@ const TeamLeadDashboard = () => {
     dateRange.endDate,
     !!selectedTeamLead
   );
+
+  // Fetch calls data for the selected team lead
+  const {
+    data: calls,
+    refetch: refetchCalls
+  } = useCalls(
+    selectedTeamLead,
+    dateRange.startDate,
+    dateRange.endDate,
+    !!selectedTeamLead
+  );
+  
+  // Fetch emails data for the selected team lead
+  const {
+    data: emails,
+    refetch: refetchEmails
+  } = useEmails(
+    selectedTeamLead,
+    dateRange.startDate,
+    dateRange.endDate,
+    !!selectedTeamLead
+  );
+  
+  // Fetch live chat data for the selected team lead
+  const {
+    data: liveChats,
+    refetch: refetchLiveChats
+  } = useLiveChat(
+    selectedTeamLead,
+    dateRange.startDate,
+    dateRange.endDate,
+    !!selectedTeamLead
+  );
+  
+  // Fetch escalations data for the selected team lead
+  const {
+    data: escalations,
+    refetch: refetchEscalations
+  } = useEscalations(
+    selectedTeamLead,
+    dateRange.startDate,
+    dateRange.endDate,
+    !!selectedTeamLead
+  );
+  
+  // Fetch QA assessments data for the selected team lead
+  const {
+    data: qaAssessments,
+    refetch: refetchQAAssessments
+  } = useQAAssessments(
+    selectedTeamLead,
+    dateRange.startDate,
+    dateRange.endDate,
+    !!selectedTeamLead
+  );
   
   // Set selected team lead when teamLeads data loads
   useEffect(() => {
@@ -75,6 +142,11 @@ const TeamLeadDashboard = () => {
     console.log('Processing daily stats and survey tickets data', {
       dailyStats: dailyStats.length,
       surveyTickets: surveyTickets?.length || 0,
+      calls: calls?.length || 0,
+      emails: emails?.length || 0,
+      liveChats: liveChats?.length || 0,
+      escalations: escalations?.length || 0,
+      qaAssessments: qaAssessments?.length || 0,
       dateRange
     });
     
@@ -147,7 +219,7 @@ const TeamLeadDashboard = () => {
         variant: "destructive",
       });
     }
-  }, [dailyStats, surveyTickets, dateRange]);
+  }, [dailyStats, surveyTickets, calls, emails, liveChats, escalations, qaAssessments, dateRange]);
   
   // Set up realtime subscriptions
   useEffect(() => {
@@ -177,6 +249,11 @@ const TeamLeadDashboard = () => {
     // Daily stats subscription - only set up if we have a selected team lead
     let dailyStatsChannel;
     let surveyTicketsChannel;
+    let callsChannel;
+    let emailsChannel;
+    let liveChatChannel;
+    let escalationsChannel;
+    let qaAssessmentsChannel;
     
     if (selectedTeamLead) {
       dailyStatsChannel = supabase
@@ -220,6 +297,106 @@ const TeamLeadDashboard = () => {
           }
         )
         .subscribe();
+        
+      callsChannel = supabase
+        .channel('dashboard-calls-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Calls',
+            filter: `team_lead_id=eq.${selectedTeamLead}`
+          },
+          () => {
+            refetchCalls();
+            toast({
+              title: "Calls Data Updated",
+              description: "Call data has been refreshed",
+            });
+          }
+        )
+        .subscribe();
+        
+      emailsChannel = supabase
+        .channel('dashboard-emails-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Emails',
+            filter: `team_lead_id=eq.${selectedTeamLead}`
+          },
+          () => {
+            refetchEmails();
+            toast({
+              title: "Emails Data Updated",
+              description: "Email data has been refreshed",
+            });
+          }
+        )
+        .subscribe();
+        
+      liveChatChannel = supabase
+        .channel('dashboard-livechat-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Live Chat',
+            filter: `team_lead_id=eq.${selectedTeamLead}`
+          },
+          () => {
+            refetchLiveChats();
+            toast({
+              title: "Live Chat Data Updated",
+              description: "Live chat data has been refreshed",
+            });
+          }
+        )
+        .subscribe();
+        
+      escalationsChannel = supabase
+        .channel('dashboard-escalations-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Escalations',
+            filter: `team_lead_id=eq.${selectedTeamLead}`
+          },
+          () => {
+            refetchEscalations();
+            toast({
+              title: "Escalations Data Updated",
+              description: "Escalation data has been refreshed",
+            });
+          }
+        )
+        .subscribe();
+        
+      qaAssessmentsChannel = supabase
+        .channel('dashboard-qa-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'QA Table',
+            filter: `team_lead_id=eq.${selectedTeamLead}`
+          },
+          () => {
+            refetchQAAssessments();
+            toast({
+              title: "QA Data Updated",
+              description: "QA assessment data has been refreshed",
+            });
+          }
+        )
+        .subscribe();
     }
       
     return () => {
@@ -227,12 +404,42 @@ const TeamLeadDashboard = () => {
       supabase.removeChannel(teamLeadsChannel);
       if (dailyStatsChannel) supabase.removeChannel(dailyStatsChannel);
       if (surveyTicketsChannel) supabase.removeChannel(surveyTicketsChannel);
+      if (callsChannel) supabase.removeChannel(callsChannel);
+      if (emailsChannel) supabase.removeChannel(emailsChannel);
+      if (liveChatChannel) supabase.removeChannel(liveChatChannel);
+      if (escalationsChannel) supabase.removeChannel(escalationsChannel);
+      if (qaAssessmentsChannel) supabase.removeChannel(qaAssessmentsChannel);
     };
-  }, [selectedTeamLead, refetchTeamLeads, refetchDailyStats, refetchSurveyTickets]);
+  }, [
+    selectedTeamLead, 
+    refetchTeamLeads, 
+    refetchDailyStats, 
+    refetchSurveyTickets,
+    refetchCalls,
+    refetchEmails,
+    refetchLiveChats,
+    refetchEscalations,
+    refetchQAAssessments
+  ]);
 
   const handleRefresh = () => {
     console.log('Manual refresh requested');
     refetchTeamLeads();
+    
+    if (selectedTeamLead) {
+      refetchDailyStats();
+      refetchSurveyTickets();
+      refetchCalls();
+      refetchEmails();
+      refetchLiveChats();
+      refetchEscalations();
+      refetchQAAssessments();
+      
+      toast({
+        title: "Refreshing Data",
+        description: "Fetching latest team lead data...",
+      });
+    }
   };
   
   const fetchStats = () => {
@@ -241,14 +448,28 @@ const TeamLeadDashboard = () => {
       startDate: dateRange.startDate, 
       endDate: dateRange.endDate 
     });
-    refetchDailyStats();
-    refetchSurveyTickets();
     
-    // Show temporary toast to confirm fetching
-    toast({
-      title: "Fetching Data",
-      description: `Requesting data for ${dateRange.startDate} to ${dateRange.endDate}`,
-    });
+    if (selectedTeamLead) {
+      refetchDailyStats();
+      refetchSurveyTickets();
+      refetchCalls();
+      refetchEmails();
+      refetchLiveChats();
+      refetchEscalations();
+      refetchQAAssessments();
+      
+      // Show temporary toast to confirm fetching
+      toast({
+        title: "Fetching Data",
+        description: `Requesting data for ${dateRange.startDate} to ${dateRange.endDate}`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "No team lead selected",
+        variant: "destructive",
+      });
+    }
   };
 
   const isLoading = isLoadingTeamLeads && teamLeads.length === 0;
@@ -260,6 +481,11 @@ const TeamLeadDashboard = () => {
     dateRange,
     dailyStatsCount: dailyStats.length,
     surveyTicketsCount: surveyTickets?.length || 0,
+    callsCount: calls?.length || 0,
+    emailsCount: emails?.length || 0,
+    liveChatCount: liveChats?.length || 0,
+    escalationsCount: escalations?.length || 0,
+    qaAssessmentsCount: qaAssessments?.length || 0,
     isLoadingDailyStats,
     isLoadingSurveyTickets,
     errors: {
