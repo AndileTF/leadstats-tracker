@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { TeamLead, DailyStats, Agent, TeamLeadOverview } from "@/types/teamLead";
@@ -16,45 +17,71 @@ export function useFetchData<T>(
   const [data, setData] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        console.log(`Fetching data from ${tableName}...`);
+  const fetchData = useCallback(async (isRetry = false) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const logPrefix = isRetry ? `Retry ${retryCount + 1}/${MAX_RETRIES}: ` : '';
+      console.log(`${logPrefix}Fetching data from ${tableName}...`);
+      
+      const { data, error } = await queryFn();
+      
+      if (error) {
+        console.error(`${logPrefix}Error fetching data from ${tableName}:`, error);
+        setError(`Failed to fetch data: ${error.message}`);
         
-        const { data, error } = await queryFn();
-        
-        if (error) {
-          console.error(`Error fetching data from ${tableName}:`, error);
-          setError(`Failed to fetch data: ${error.message}`);
+        // Only show toast for initial failures, not retries
+        if (!isRetry) {
           toast({
             title: "Error",
             description: `Failed to fetch data from ${tableName}: ${error.message}`,
             variant: "destructive",
           });
-          return;
         }
         
-        console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}`);
-        
-        if (data) {
-          setData(data);
-          if (onSuccess) onSuccess(data);
+        // Auto-retry logic for specific errors
+        if (retryCount < MAX_RETRIES && 
+            (error.message.includes('timeout') || 
+             error.message.includes('network') ||
+             error.message.includes('connection'))) {
+          setRetryCount(prev => prev + 1);
+          const delay = Math.min(1000 * (2 ** retryCount), 10000); // Exponential backoff
+          console.log(`${tableName}: Scheduling retry ${retryCount + 1}/${MAX_RETRIES} in ${delay}ms`);
+          setTimeout(() => fetchData(true), delay);
         }
-      } catch (err: any) {
-        console.error(`Error in useFetchData(${tableName}):`, err);
-        setError(`Failed to fetch data: ${err.message}`);
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
+      
+      // Reset retry count on success
+      if (retryCount > 0) {
+        setRetryCount(0);
+      }
+      
+      console.log(`${logPrefix}Successfully fetched ${data?.length || 0} records from ${tableName}`);
+      
+      if (data) {
+        setData(data);
+        if (onSuccess) onSuccess(data);
+      } else {
+        setData([]);
+        console.log(`${tableName}: Query returned null data`);
+      }
+    } catch (err: any) {
+      console.error(`${logPrefix}Error in useFetchData(${tableName}):`, err);
+      setError(`Failed to fetch data: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tableName, queryFn, retryCount, onSuccess]);
 
+  useEffect(() => {
     fetchData();
   }, [...dependencies]);
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -90,7 +117,7 @@ export function useFetchData<T>(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [tableName, queryFn, onSuccess]);
 
   return { data, isLoading, error, refetch };
 }
@@ -103,17 +130,22 @@ export function useTeamLeads() {
       // Add debugging info for team leads fetch
       console.log('Fetching team leads with supabase query');
       
-      const response = await supabase
-        .from('team_leads')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      console.log('Team leads response:', {
-        dataLength: response.data?.length || 0,
-        error: response.error ? response.error.message : null
-      });
-      
-      return response;
+      try {
+        const response = await supabase
+          .from('team_leads')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        console.log('Team leads response:', {
+          dataLength: response.data?.length || 0,
+          error: response.error ? response.error.message : null
+        });
+        
+        return response;
+      } catch (err: any) {
+        console.error('Error in team leads query:', err);
+        throw err;
+      }
     }
   );
 }
@@ -126,11 +158,24 @@ export function useAgents(teamLeadId: string | null, enabled: boolean = true) {
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('agents')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .order('start_date', { ascending: false });
+      try {
+        console.log(`Fetching agents for team lead ${teamLeadId}`);
+        const response = await supabase
+          .from('agents')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .order('start_date', { ascending: false });
+          
+        console.log(`Agents query response:`, {
+          count: response.data?.length || 0,
+          error: response.error ? response.error.message : null
+        });
+        
+        return response;
+      } catch (err: any) {
+        console.error('Error in agents query:', err);
+        throw err;
+      }
     },
     [teamLeadId, enabled]
   );
@@ -230,12 +275,27 @@ export function useCalls(
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('Calls')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('Date', startDate)
-        .lte('Date', endDate);
+      console.log(`Fetching calls for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('Calls')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('Date', startDate)
+          .lte('Date', endDate);
+          
+        console.log(`Calls query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+        
+        return response;
+      } catch (err) {
+        console.error("Error executing calls query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );
@@ -254,12 +314,27 @@ export function useEmails(
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('Emails')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('Date', startDate)
-        .lte('Date', endDate);
+      console.log(`Fetching emails for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('Emails')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('Date', startDate)
+          .lte('Date', endDate);
+          
+        console.log(`Emails query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+        
+        return response;
+      } catch (err) {
+        console.error("Error executing emails query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );
@@ -278,12 +353,27 @@ export function useLiveChat(
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('Live Chat')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('Date', startDate)
-        .lte('Date', endDate);
+      console.log(`Fetching live chat for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('Live Chat')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('Date', startDate)
+          .lte('Date', endDate);
+          
+        console.log(`Live chat query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+        
+        return response;
+      } catch (err) {
+        console.error("Error executing live chat query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );
@@ -302,12 +392,27 @@ export function useEscalations(
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('Escalations')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('Date', startDate)
-        .lte('Date', endDate);
+      console.log(`Fetching escalations for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('Escalations')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('Date', startDate)
+          .lte('Date', endDate);
+          
+        console.log(`Escalations query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+        
+        return response;
+      } catch (err) {
+        console.error("Error executing escalations query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );
@@ -326,12 +431,27 @@ export function useQAAssessments(
         return { data: [], error: null };
       }
       
-      return await supabase
-        .from('QA Table')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .gte('Date', startDate)
-        .lte('Date', endDate);
+      console.log(`Fetching QA assessments for team lead ${teamLeadId} from ${startDate} to ${endDate}`);
+      
+      try {
+        const response = await supabase
+          .from('QA Table')
+          .select('*')
+          .eq('team_lead_id', teamLeadId)
+          .gte('Date', startDate)
+          .lte('Date', endDate);
+          
+        console.log(`QA assessments query response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error,
+          params: { teamLeadId, startDate, endDate }
+        });
+        
+        return response;
+      } catch (err) {
+        console.error("Error executing QA assessments query:", err);
+        throw err;
+      }
     },
     [teamLeadId, startDate, endDate, enabled]
   );
@@ -341,10 +461,24 @@ export function useTeamLeadOverview() {
   return useFetchData<TeamLeadOverview>(
     'team_metrics',
     async () => {
-      // Adding await here to fix the TypeScript error
-      return await supabase
-        .from('team_metrics')
-        .select('*');
+      console.log('Fetching team metrics overview');
+      
+      try {
+        // Adding await here to fix the TypeScript error
+        const response = await supabase
+          .from('team_metrics')
+          .select('*');
+          
+        console.log(`Team metrics overview response:`, {
+          data: response.data ? response.data.length : 0,
+          error: response.error
+        });
+        
+        return response;
+      } catch (err) {
+        console.error("Error executing team metrics query:", err);
+        throw err;
+      }
     }
   );
 }
@@ -354,6 +488,7 @@ export function useDatabaseConnection() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   const checkConnection = async () => {
     try {
@@ -372,16 +507,19 @@ export function useDatabaseConnection() {
         console.error('Database connection error:', error);
         setConnectionError(`Failed to connect to database: ${error.message}`);
         setIsConnected(false);
+        setLastChecked(new Date());
         return false;
       }
       
       console.log('Database connection successful. Data received:', data);
       setIsConnected(true);
+      setLastChecked(new Date());
       return true;
     } catch (err: any) {
       console.error('Database connection check failed:', err);
       setConnectionError(`Failed to connect to database: ${err.message}`);
       setIsConnected(false);
+      setLastChecked(new Date());
       return false;
     } finally {
       setIsChecking(false);
@@ -390,7 +528,14 @@ export function useDatabaseConnection() {
   
   useEffect(() => {
     checkConnection();
+    
+    // Check connection every 5 minutes to ensure it's still alive
+    const intervalId = setInterval(() => {
+      checkConnection();
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
-  return { isConnected, isChecking, connectionError, checkConnection };
+  return { isConnected, isChecking, connectionError, checkConnection, lastChecked };
 }

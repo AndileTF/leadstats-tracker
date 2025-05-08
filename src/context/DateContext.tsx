@@ -6,6 +6,7 @@ import { format, subDays } from "date-fns";
 interface DateContextType {
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
+  resetToDefaultRange: () => void;
 }
 
 // Default date range: last 30 days to today
@@ -19,11 +20,22 @@ const defaultDateRange: DateRange = {
 
 const DateContext = createContext<DateContextType>({
   dateRange: defaultDateRange,
-  setDateRange: () => {}
+  setDateRange: () => {},
+  resetToDefaultRange: () => {}
 });
 
 export const DateProvider = ({ children }: { children: ReactNode }) => {
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
+
+  // Reset function to return to default date range
+  const resetToDefaultRange = () => {
+    const newDefaultRange = {
+      startDate: getDefaultStartDate(),
+      endDate: getCurrentDate()
+    };
+    console.log("DateProvider: Resetting to default date range:", newDefaultRange);
+    setDateRange(newDefaultRange);
+  };
 
   // Log date range changes for debugging
   useEffect(() => {
@@ -47,7 +59,7 @@ export const DateProvider = ({ children }: { children: ReactNode }) => {
   }, [dateRange]);
 
   return (
-    <DateContext.Provider value={{ dateRange, setDateRange }}>
+    <DateContext.Provider value={{ dateRange, setDateRange, resetToDefaultRange }}>
       {children}
     </DateContext.Provider>
   );

@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { useDatabaseConnection } from "@/hooks/use-supabase-data";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 export const ConnectionStatus = () => {
   const { isConnected, isChecking, connectionError, checkConnection } = useDatabaseConnection();
   const [showStatus, setShowStatus] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   
   useEffect(() => {
     // Auto-hide successful connection status after 10 seconds
@@ -19,9 +20,21 @@ export const ConnectionStatus = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [isConnected, connectionError]);
+    
+    // Auto-retry connection up to 3 times if there's an error
+    if (connectionError && retryCount < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Auto-retrying connection (attempt ${retryCount + 1}/3)...`);
+        checkConnection();
+        setRetryCount(prev => prev + 1);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected, connectionError, retryCount, checkConnection]);
   
   const handleRetry = async () => {
+    setRetryCount(0);
     const success = await checkConnection();
     if (success) {
       toast({
@@ -66,6 +79,9 @@ export const ConnectionStatus = () => {
               Retry Connection
             </Button>
           </div>
+          <p className="text-xs opacity-70">
+            {retryCount > 0 ? `Auto-retry attempts: ${retryCount}/3` : ''}
+          </p>
         </AlertDescription>
       </Alert>
     );
@@ -76,8 +92,17 @@ export const ConnectionStatus = () => {
       <Alert variant="default" className="mb-6 bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800">
         <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
         <AlertTitle>Connected to Database</AlertTitle>
-        <AlertDescription>
-          Connection to Supabase database established successfully.
+        <AlertDescription className="flex flex-col gap-1">
+          <p>Connection to Supabase database established successfully.</p>
+          <div className="flex items-center mt-1">
+            <RefreshCw 
+              className="h-3 w-3 mr-1 text-green-600 dark:text-green-400 cursor-pointer"
+              onClick={handleRetry} 
+            />
+            <span className="text-xs opacity-70 cursor-pointer" onClick={handleRetry}>
+              Refresh connection
+            </span>
+          </div>
         </AlertDescription>
       </Alert>
     );
