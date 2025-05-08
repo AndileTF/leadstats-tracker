@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { DailyStats } from "@/types/teamLead";
+import { DailyStats, TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
@@ -26,6 +25,7 @@ const TeamLeadDashboard = () => {
   const [stats, setStats] = useState<DailyStats[]>([]);
   const { dateRange } = useDateRange();
   const [queryLogsVisible, setQueryLogsVisible] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   
   // Log current date range for debugging
   useEffect(() => {
@@ -39,6 +39,16 @@ const TeamLeadDashboard = () => {
     error: teamLeadsError, 
     refetch: refetchTeamLeads 
   } = useTeamLeads();
+  
+  // Debug team leads fetching on initial load
+  useEffect(() => {
+    console.log("TeamLeadDashboard: teamLeads state updated:", {
+      count: teamLeads.length,
+      isLoading: isLoadingTeamLeads,
+      error: teamLeadsError,
+      data: teamLeads
+    });
+  }, [teamLeads, isLoadingTeamLeads, teamLeadsError]);
   
   // Fetch daily stats for the selected team lead
   const { 
@@ -123,11 +133,15 @@ const TeamLeadDashboard = () => {
   
   // Set selected team lead when teamLeads data loads
   useEffect(() => {
-    console.log('TeamLeadDashboard: teamLeads updated:', teamLeads.length);
+    console.log('TeamLeadDashboard: teamLeads updated:', {
+      count: teamLeads.length,
+      data: teamLeads.map(tl => `${tl.id} (${tl.name})`)
+    });
     
     if (teamLeads.length > 0 && !selectedTeamLead) {
-      console.log(`Setting selected team lead to first team lead: ${teamLeads[0].id} (${teamLeads[0].name})`);
-      setSelectedTeamLead(teamLeads[0].id);
+      const firstTeamLead = teamLeads[0].id;
+      console.log(`Setting selected team lead to first team lead: ${firstTeamLead} (${teamLeads[0].name})`);
+      setSelectedTeamLead(firstTeamLead);
     }
   }, [teamLeads, selectedTeamLead]);
   
@@ -422,6 +436,39 @@ const TeamLeadDashboard = () => {
     refetchQAAssessments
   ]);
 
+  const handleRefreshTeamLeads = async () => {
+    toast({
+      title: "Refreshing Team Leads",
+      description: "Fetching latest team leads data...",
+    });
+    
+    await refetchTeamLeads();
+    console.log("Team leads refreshed, new count:", teamLeads.length);
+    
+    if (teamLeads.length === 0) {
+      // If no team leads are found, attempt to fetch directly from the database
+      try {
+        const { data, error } = await supabase
+          .from('team_leads')
+          .select('*');
+        
+        console.log("Direct team leads query result:", { 
+          data: data?.length || 0,
+          error: error?.message || null
+        });
+        
+        if (data && data.length > 0) {
+          toast({
+            title: "Found Team Leads",
+            description: `Direct query found ${data.length} team leads`,
+          });
+        }
+      } catch (err) {
+        console.error("Error in direct team leads query:", err);
+      }
+    }
+  };
+
   const handleRefresh = () => {
     console.log('Manual refresh requested');
     refetchTeamLeads();
@@ -517,19 +564,47 @@ const TeamLeadDashboard = () => {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
               <div>
-                <p className="text-destructive font-medium">{teamLeadsError}</p>
+                <p className="text-destructive font-medium">Error loading team leads</p>
                 <p className="text-destructive/70 text-sm mt-1">
-                  There was an error loading the dashboard data. Please check console for more details.
+                  {teamLeadsError}
                 </p>
               </div>
             </div>
-            <Button 
-              variant="outline"
-              onClick={handleRefresh}
-              className="w-full sm:w-auto"
-            >
-              Try again
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline"
+                onClick={handleRefresh}
+                className="w-full sm:w-auto"
+              >
+                Try again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRefreshTeamLeads}
+                className="w-full sm:w-auto"
+              >
+                Refresh Team Leads Only
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDebugMode(!debugMode)}
+                className="w-full sm:w-auto"
+              >
+                {debugMode ? 'Hide' : 'Show'} Debug Info
+              </Button>
+            </div>
+            {debugMode && (
+              <div className="mt-4 p-3 bg-slate-900 text-slate-200 rounded-md overflow-auto text-xs">
+                <pre>
+                  {JSON.stringify({
+                    teamLeadsError, 
+                    teamLeadsCount: teamLeads.length,
+                    dateRange,
+                    selectedTeamLead
+                  }, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
         ) : teamLeads.length === 0 ? (
           <div className="text-center p-8 bg-muted/50 rounded-lg border space-y-4">
@@ -539,14 +614,22 @@ const TeamLeadDashboard = () => {
               <p className="text-muted-foreground mt-2">
                 There are no team leads available in the database.
               </p>
+              <Button 
+                variant="outline"
+                onClick={handleRefreshTeamLeads}
+                className="mt-4"
+              >
+                Refresh Team Leads
+              </Button>
+              <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-md">
+                <h3 className="font-medium mb-2">Common Reasons:</h3>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>No data exists in the team_leads table</li>
+                  <li>Database connection issues</li>
+                  <li>Row Level Security (RLS) policies blocking access</li>
+                </ul>
+              </div>
             </div>
-            <Button 
-              variant="outline"
-              onClick={handleRefresh}
-              className="mt-4"
-            >
-              Refresh data
-            </Button>
           </div>
         ) : (
           <>

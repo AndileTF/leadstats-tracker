@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { DateRange } from "@/types/teamLead";
 import { format, subDays } from "date-fns";
 
@@ -25,7 +25,26 @@ const DateContext = createContext<DateContextType>({
 export const DateProvider = ({ children }: { children: ReactNode }) => {
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
 
-  console.log("DateProvider initialized with range:", dateRange);
+  // Log date range changes for debugging
+  useEffect(() => {
+    console.log("DateProvider: date range updated:", dateRange);
+    
+    // Validate date format
+    if (dateRange.startDate && dateRange.endDate) {
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error("DateProvider: Invalid date format detected", dateRange);
+      } else {
+        console.log("DateProvider: Valid date range", {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          days: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        });
+      }
+    }
+  }, [dateRange]);
 
   return (
     <DateContext.Provider value={{ dateRange, setDateRange }}>

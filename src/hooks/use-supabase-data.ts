@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -101,11 +100,20 @@ export function useTeamLeads() {
   return useFetchData<TeamLead>(
     'team_leads',
     async () => {
-      // Adding await here to fix the TypeScript error
-      return await supabase
+      // Add debugging info for team leads fetch
+      console.log('Fetching team leads with supabase query');
+      
+      const response = await supabase
         .from('team_leads')
         .select('*')
         .order('name', { ascending: true });
+      
+      console.log('Team leads response:', {
+        dataLength: response.data?.length || 0,
+        error: response.error ? response.error.message : null
+      });
+      
+      return response;
     }
   );
 }
@@ -367,7 +375,7 @@ export function useDatabaseConnection() {
         return false;
       }
       
-      console.log('Database connection successful');
+      console.log('Database connection successful. Data received:', data);
       setIsConnected(true);
       return true;
     } catch (err: any) {
