@@ -410,6 +410,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_profile_role: {
+        Args: { user_id: string }
+        Returns: string
+      }
       get_weekly_stats: {
         Args: { start_date: string }
         Returns: {

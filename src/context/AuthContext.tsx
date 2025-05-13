@@ -53,12 +53,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkUserRole = async (userId: string) => {
     try {
-      // Check if user has admin role in profiles table
+      // Use the RPC function to check user role instead of direct query
+      // This prevents the infinite recursion in RLS policies
       const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
+        .rpc('get_profile_role', { user_id: userId });
 
       if (error) {
         console.error('Error fetching user role:', error);
@@ -66,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      setIsAdmin(data?.role === 'admin');
+      setIsAdmin(data === 'admin');
     } catch (error) {
       console.error('Error checking user role:', error);
       setIsAdmin(false);
