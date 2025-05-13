@@ -26,10 +26,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 });
 
 // Check the connection by fetching a simple query
-supabase.from('team_leads').select('count').limit(1).single()
-  .then(() => {
+// Convert the Promise to a more explicit Promise<void> to prevent TypeScript issues
+(async () => {
+  try {
+    await supabase.from('team_leads').select('count').limit(1).single();
     console.log('Successfully connected to Supabase');
-  })
-  .catch((error: any) => {
+  } catch (error) {
     console.error('Failed to connect to Supabase:', error);
-  });
+  }
+})();
