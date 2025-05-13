@@ -30,6 +30,6 @@ supabase.from('team_leads').select('count').limit(1).single()
   .then(() => {
     console.log('Successfully connected to Supabase');
   })
-  .catch(error => {
+  .catch((error: any) => {
     console.error('Failed to connect to Supabase:', error);
   });
