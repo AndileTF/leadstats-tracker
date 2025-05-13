@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -203,7 +204,7 @@ export function useDailyStats(
           .eq('team_lead_id', teamLeadId)
           .gte('date', startDate)
           .lte('date', endDate)
-          .order('date', { ascending: false });
+          .order('date', { ascending: true });
           
         console.log(`Daily stats query response:`, {
           data: response.data ? response.data.length : 0,
@@ -463,7 +464,7 @@ export function useTeamLeadOverview() {
       console.log('Fetching team metrics overview');
       
       try {
-        // Map the returned team_metrics data to match the TeamLeadOverview type
+        // Fetch raw data from team_metrics table
         const response = await supabase
           .from('team_metrics')
           .select('*');
@@ -526,6 +527,20 @@ export function useDatabaseConnection() {
         setIsConnected(false);
         setLastChecked(new Date());
         return false;
+      }
+      
+      // Additionally check daily_stats to ensure we can access that table
+      const statsCheck = await supabase
+        .from('daily_stats')
+        .select('count')
+        .limit(1);
+        
+      if (statsCheck.error) {
+        console.error('Daily stats table access error:', statsCheck.error);
+        setConnectionError(`Can connect but cannot access daily_stats: ${statsCheck.error.message}`);
+        setIsConnected(true); // We can connect but can't access all tables
+        setLastChecked(new Date());
+        return true;
       }
       
       console.log('Database connection successful. Data received:', data);
