@@ -1,3 +1,4 @@
+
 import {
   Sheet,
   SheetContent,
@@ -88,7 +89,7 @@ export function Navbar() {
           Dashboard
         </Link>
         {user ? (
-          <DropdownMenu className="ml-auto">
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="ml-auto">
                 <Avatar className="mr-2 h-8 w-8">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "./integrations/supabase/client";
@@ -11,7 +12,7 @@ import TeamOverview from "./pages/TeamOverview";
 import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
-import Navbar from "./components/Navbar";
+import { Navbar } from "./components/Navbar";
 import Diagnostics from "./pages/Diagnostics";
 
 interface Props {

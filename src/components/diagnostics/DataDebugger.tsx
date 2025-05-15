@@ -33,7 +33,7 @@ export const DataDebugger = ({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Database className="h-4 w-4" />
               {title}
-              <Badge variant={error ? "destructive" : data && data.length > 0 ? "success" : "outline"}>
+              <Badge variant={error ? "destructive" : data && data.length > 0 ? "default" : "outline"}>
                 {error ? "Error" : isLoading ? "Loading..." : data && data.length > 0 ? `${data.length} records` : "No data"}
               </Badge>
             </CardTitle>

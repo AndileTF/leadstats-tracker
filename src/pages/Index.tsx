@@ -1,7 +1,7 @@
 
 import TeamLeadDashboard from './team-lead-dashboard/TeamLeadDashboard';
 import { ConnectionStatus } from "@/components/diagnostics/ConnectionStatus";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
 
 const Index = () => {
   return (

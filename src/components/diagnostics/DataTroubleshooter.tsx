@@ -1,167 +1,180 @@
 
-import { useState } from "react";
+import { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { AlertCircle, ChevronDown, ChevronUp, Database, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { AlertCircle, Database, Terminal } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+
+const KNOWN_TABLES = [
+  "After Call Survey Tickets",
+  "Calls",
+  "Emails",
+  "QA Table",
+  "agents",
+  "Escalations",
+  "Live Chat",
+  "team_leads",
+  "daily_stats",
+  "profiles"
+];
 
 export const DataTroubleshooter = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [results, setResults] = useState<{
-    tablesCount?: number;
-    teamLeadsCount?: number;
-    dailyStatsCount?: number;
-    agentsCount?: number;
-    error?: string;
-  } | null>(null);
+  const [tables, setTables] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [counts, setCounts] = useState<Record<string, number | null>>({});
+  const [isCountLoading, setIsCountLoading] = useState<Record<string, boolean>>({});
 
-  const runDiagnostics = async () => {
-    setChecking(true);
-    setResults(null);
-    
+  useEffect(() => {
+    fetchTables();
+  }, []);
+
+  const fetchTables = async () => {
     try {
-      // Test database connection
-      const { data: tables, error: tablesError } = await supabase
-        .from('pg_tables')
-        .select('tablename')
-        .eq('schemaname', 'public')
-        .limit(20);
+      setIsLoading(true);
+      setError(null);
+      
+      // Get tables directly from PostgreSQL's information_schema
+      const { data, error } = await supabase
+        .from('information_schema.tables')
+        .select('table_name')
+        .eq('table_schema', 'public')
+        .neq('table_name', 'pg_stat_statements')
+        .order('table_name');
+
+      if (error) throw new Error(error.message);
+      
+      if (data) {
+        const tableNames = data.map(t => t.table_name).filter(name => 
+          // Filter out system tables
+          !name.startsWith('_') && 
+          !name.includes('schema') && 
+          !name.startsWith('pg_')
+        );
         
-      if (tablesError) {
-        toast({
-          title: "Connection Error",
-          description: `Database connection issue: ${tablesError.message}`,
-          variant: "destructive"
+        setTables(tableNames);
+        
+        // Initialize counts object
+        const initialCounts: Record<string, null> = {};
+        tableNames.forEach(table => {
+          initialCounts[table] = null;
         });
-        setResults({ error: tablesError.message });
-        setChecking(false);
-        return;
+        setCounts(initialCounts);
+        
+        // Get counts for each table
+        tableNames.forEach(fetchTableCount);
       }
-      
-      // Check team_leads table
-      const { data: teamLeads, error: teamLeadsError } = await supabase
-        .from('team_leads')
-        .select('id, name')
-        .limit(10);
-        
-      if (teamLeadsError) {
-        setResults({ 
-          tablesCount: tables?.length || 0,
-          error: `Team leads table error: ${teamLeadsError.message}`
-        });
-        setChecking(false);
-        return;
-      }
-      
-      // Check daily_stats table
-      const { data: dailyStats, error: dailyStatsError } = await supabase
-        .from('daily_stats')
-        .select('id, team_lead_id, date')
-        .limit(10);
-        
-      // Check agents table
-      const { data: agents, error: agentsError } = await supabase
-        .from('agents')
-        .select('id, team_lead_id, name')
-        .limit(10);
-        
-      setResults({
-        tablesCount: tables?.length || 0,
-        teamLeadsCount: teamLeads?.length || 0,
-        dailyStatsCount: dailyStats?.length || 0,
-        agentsCount: agents?.length || 0,
-        error: dailyStatsError?.message || agentsError?.message || undefined
-      });
-      
-      toast({
-        title: "Diagnostics Complete",
-        description: `Found ${tables?.length} tables, ${teamLeads?.length} team leads, ${dailyStats?.length} stats records`,
-      });
     } catch (err: any) {
-      setResults({ error: err.message });
-      toast({
-        title: "Diagnostics Failed",
-        description: err.message,
-        variant: "destructive"
-      });
+      console.error('Error fetching tables:', err);
+      setError(err.message || 'Failed to fetch database tables');
     } finally {
-      setChecking(false);
+      setIsLoading(false);
     }
   };
 
+  const fetchTableCount = async (tableName: string) => {
+    try {
+      setIsCountLoading(prev => ({ ...prev, [tableName]: true }));
+      
+      // We need to use raw SQL for this to handle tables with spaces in their names
+      const { data, error } = await supabase.rpc('get_row_count', {
+        table_name: tableName
+      });
+
+      if (error) throw new Error(error.message);
+      
+      setCounts(prev => ({ ...prev, [tableName]: data }));
+    } catch (err: any) {
+      console.error(`Error fetching count for ${tableName}:`, err);
+      setCounts(prev => ({ ...prev, [tableName]: null }));
+    } finally {
+      setIsCountLoading(prev => ({ ...prev, [tableName]: false }));
+    }
+  };
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          {error}
+          <div className="mt-2">
+            <Button variant="outline" size="sm" onClick={fetchTables}>Retry</Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <Card>
-      <CardHeader className="py-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Data Connection Troubleshooter
-          </CardTitle>
-          <CollapsibleTrigger asChild onClick={() => setIsOpen(!isOpen)}>
-            <Button size="sm" variant="ghost">
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-        </div>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Database className="h-5 w-5" /> Database Tables
+        </CardTitle>
+        <CardDescription>
+          Overview of all tables in your database and their record counts
+        </CardDescription>
       </CardHeader>
-      <Collapsible open={isOpen}>
-        <CollapsibleContent>
-          <CardContent className="pt-0">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Run diagnostics to check database connectivity and table access.
-              </p>
-              
-              <Button 
-                onClick={runDiagnostics} 
-                disabled={checking}
-                className="w-full"
-              >
-                {checking ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Database className="h-4 w-4 mr-2" />
-                )}
-                {checking ? "Running Diagnostics..." : "Run Diagnostics"}
-              </Button>
-              
-              {results && (
-                <div className="space-y-3">
-                  {results.error ? (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Connection Error</AlertTitle>
-                      <AlertDescription>{results.error}</AlertDescription>
-                    </Alert>
-                  ) : (
-                    <Alert variant={results.dailyStatsCount === 0 ? "warning" : "default"}>
-                      <AlertTitle>Diagnostics Results</AlertTitle>
-                      <AlertDescription>
-                        <ul className="list-disc pl-5 space-y-1 mt-2">
-                          <li>Tables found: <strong>{results.tablesCount}</strong></li>
-                          <li>Team leads: <strong>{results.teamLeadsCount}</strong></li>
-                          <li>Daily stats records: <strong>{results.dailyStatsCount}</strong></li>
-                          <li>Agents: <strong>{results.agentsCount}</strong></li>
-                        </ul>
-                        
-                        {results.dailyStatsCount === 0 && (
-                          <p className="mt-3 text-amber-600">
-                            No daily stats records found. This explains why the dashboard is empty.
-                          </p>
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                  )}
+      <CardContent>
+        {tables.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Database className="h-12 w-12 mx-auto opacity-50 mb-3" />
+            <p>No tables found in the database.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {tables.map((table) => (
+              <div key={table} className="border rounded-md p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-mono">{table}</span>
+                    {KNOWN_TABLES.includes(table) ? (
+                      <Badge variant="default">System Table</Badge>
+                    ) : (
+                      <Badge variant="outline">Custom Table</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isCountLoading[table] ? (
+                      <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full"></div>
+                    ) : (
+                      <Badge variant={counts[table] === 0 ? "outline" : "default"} className="font-mono">
+                        {counts[table] === null ? '?' : `${counts[table]} rows`}
+                      </Badge>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => fetchTableCount(table)}
+                      disabled={isCountLoading[table]}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </div>
+            ))}
+            <Separator className="my-6" />
+            <div className="flex justify-end">
+              <Button onClick={fetchTables}>Refresh All Tables</Button>
             </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };
