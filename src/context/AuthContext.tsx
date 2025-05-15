@@ -22,29 +22,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
-      setIsLoading(false);
       
-      // Check if user is admin
+      // Check if user is admin - defer with setTimeout to prevent infinite recursion
       if (session?.user) {
-        checkUserRole(session.user.id);
+        setTimeout(() => {
+          checkUserRole(session.user.id);
+        }, 0);
       } else {
         setIsAdmin(false);
+        setIsLoading(false);
       }
     });
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      
-      // Check if user is admin
-      if (session?.user) {
-        checkUserRole(session.user.id);
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await checkUserRole(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
+
+    getInitialSession();
 
     return () => {
       subscription.unsubscribe();
@@ -54,25 +64,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const checkUserRole = async (userId: string) => {
     try {
       // Use the RPC function to check user role instead of direct query
-      // This prevents the infinite recursion in RLS policies
       const { data, error } = await supabase
         .rpc('get_profile_role', { user_id: userId });
 
       if (error) {
         console.error('Error fetching user role:', error);
         setIsAdmin(false);
-        return;
+      } else {
+        setIsAdmin(data === 'admin');
       }
-
-      setIsAdmin(data === 'admin');
     } catch (error) {
       console.error('Error checking user role:', error);
       setIsAdmin(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (

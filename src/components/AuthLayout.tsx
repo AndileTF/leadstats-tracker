@@ -2,7 +2,7 @@
 import { Navbar } from './Navbar';
 
 interface AuthLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const AuthLayout = ({ children }: AuthLayoutProps) => {
