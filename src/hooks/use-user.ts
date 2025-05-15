@@ -51,10 +51,10 @@ export function useUser(): UseUserReturn {
           const userData = {
             ...data,
             email: session.user.email || '',
-          };
+          } as UserProfile & { email: string };
           
           // Only add avatar_url if it exists in data
-          if (data.avatar_url) {
+          if ('avatar_url' in data && data.avatar_url) {
             userData.avatar_url = data.avatar_url;
           }
           
@@ -94,10 +94,10 @@ export function useUser(): UseUserReturn {
         const userData = {
           ...data,
           email: session.user.email || '',
-        };
+        } as UserProfile & { email: string };
         
         // Only add avatar_url if it exists in data
-        if (data.avatar_url) {
+        if ('avatar_url' in data && data.avatar_url) {
           userData.avatar_url = data.avatar_url;
         }
         

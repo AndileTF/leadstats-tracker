@@ -35,10 +35,9 @@ export const DataTroubleshooter = () => {
     setIsLoading(true);
     
     try {
-      // Type assertion to satisfy TypeScript
-      const tableKey = selectedTable as any;
+      // Use type casting to handle table name string safely
       const { data, error } = await supabase
-        .from(tableKey)
+        .from(selectedTable as any)
         .select('*')
         .limit(100);
         

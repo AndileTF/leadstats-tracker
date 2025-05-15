@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { DailyStats, TeamLead } from "@/types/teamLead";
 import { useToast } from "@/hooks/use-toast";
-import { AddStatForm } from "./AddStatForm";
 import { TeamLeadSelector } from "./TeamLeadSelector";
 import { PerformanceOverview } from "./PerformanceOverview";
 import { DateSummary } from "./DateSummary";
@@ -35,7 +34,6 @@ export const DashboardContent = ({
 }: DashboardContentProps) => {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { dateRange } = useDateRange();
-  const { toast } = useToast();
   
   // Check for empty data situations
   const noStats = stats.length === 0;
@@ -45,6 +43,11 @@ export const DashboardContent = ({
       fetchStats();
     }
   }, [selectedTeamLead, dateRange.startDate, dateRange.endDate, fetchStats]);
+
+  // Get the selected team lead object from the ID
+  const selectedTeamLeadObject = selectedTeamLead 
+    ? teamLeads.find(tl => tl.id === selectedTeamLead) || null
+    : null;
 
   if (noStats && selectedTeamLead) {
     return (
@@ -114,37 +117,12 @@ export const DashboardContent = ({
           Team Comparison
         </Button>
       </div>
-      
-      {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Daily Statistics</CardTitle>
-            <CardDescription>
-              Enter statistics for a specific date and team lead
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AddStatForm 
-              teamLeads={teamLeads}
-              preselectedTeamLeadId={selectedTeamLead}
-              onSuccess={() => {
-                fetchStats();
-                toast({
-                  title: "Success",
-                  description: "Statistics added successfully.",
-                });
-              }}
-            />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Tab content */}
       {activeTab === "overview" && (
         <PerformanceOverview 
           stats={stats} 
-          teamLeadId={selectedTeamLead}
-          teamLeads={teamLeads}
+          teamLead={selectedTeamLeadObject}
         />
       )}
 

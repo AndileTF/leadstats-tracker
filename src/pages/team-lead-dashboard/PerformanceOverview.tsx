@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart } from "@/components/dashboard/PieChart";
 import { LineChart } from "@/components/dashboard/LineChart";
@@ -18,33 +19,30 @@ export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProp
   };
   
   const getMetricTotal = (metric: string): number => {
-    return stats.reduce((acc, curr) => acc + (curr[metric] || 0), 0);
+    return stats.reduce((acc, curr) => acc + (curr[metric as keyof DailyStats] as number || 0), 0);
   };
   
+  // Create daily stats data that matches the expected format for LineChart
   const dailyStatsForChart = stats.map(stat => ({
     date: stat.date,
     calls: stat.calls || 0,
     emails: stat.emails || 0,
     live_chat: stat.live_chat || 0,
     escalations: stat.escalations || 0,
-    qa_assessments: stat.qa_assessments || 0
-  }));
+    qa_assessments: stat.qa_assessments || 0,
+  })) as DailyStats[];
   
-  const formatPieChartData = (metric: string): TeamLeadOverview[] => {
-    // Create a complete TeamLeadOverview object for chart display
+  // Create a simplified format for PieChart that only includes necessary fields
+  interface SimplePieChartData {
+    name: string;
+    total: number; // Using total instead of value to match TeamLeadOverview
+  }
+  
+  const formatPieChartData = (metric: string): SimplePieChartData[] => {
     return [
       {
         name: metricLabels[metric] || metric,
-        value: getMetricTotal(metric),
-        team_lead_id: teamLead?.id || '',
-        total_days: 0,
-        total_calls: getMetricTotal('calls'),
-        total_emails: getMetricTotal('emails'),
-        total_live_chat: getMetricTotal('live_chat'),
-        total_escalations: getMetricTotal('escalations'),
-        total_qa_assessments: getMetricTotal('qa_assessments'),
-        total_survey_tickets: 0,
-        average_sla: 0
+        total: getMetricTotal(metric),
       }
     ];
   };
@@ -62,13 +60,13 @@ export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProp
                 data={formatPieChartData('calls')} 
                 title="Call Volume" 
                 description="Total number of calls handled"
-                metric="value"
+                metric="total"
               />
               <PieChart 
                 data={formatPieChartData('emails')} 
                 title="Email Volume" 
                 description="Total number of emails handled"
-                metric="value"
+                metric="total"
               />
             </div>
             
@@ -77,13 +75,13 @@ export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProp
                 data={formatPieChartData('live_chat')} 
                 title="Live Chat Volume" 
                 description="Total number of live chats handled"
-                metric="value"
+                metric="total"
               />
               <PieChart 
                 data={formatPieChartData('escalations')} 
                 title="Escalation Volume" 
                 description="Total number of escalations handled"
-                metric="value"
+                metric="total"
               />
             </div>
             
@@ -92,7 +90,7 @@ export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProp
                 data={formatPieChartData('qa_assessments')} 
                 title="QA Assessments" 
                 description="Total number of QA assessments performed"
-                metric="value"
+                metric="total"
               />
             </div>
             
