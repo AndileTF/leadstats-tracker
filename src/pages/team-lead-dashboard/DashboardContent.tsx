@@ -121,7 +121,7 @@ export const DashboardContent = ({
       {/* Tab content */}
       {activeTab === "overview" && (
         <PerformanceOverview 
-          stats={stats} 
+          stats={stats}
           teamLead={selectedTeamLeadObject}
         />
       )}

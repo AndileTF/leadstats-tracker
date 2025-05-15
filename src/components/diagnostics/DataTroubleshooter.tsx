@@ -15,7 +15,7 @@ export const DataTroubleshooter = () => {
   const [tableData, setTableData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Define available tables explicitly for type safety
+  // Define available tables explicitly for type safety and to match Supabase table names
   const availableTables = [
     "daily_stats",
     "team_leads", 
@@ -27,7 +27,10 @@ export const DataTroubleshooter = () => {
     "Escalations",
     "Live Chat",
     "QA Table"
-  ];
+  ] as const;
+  
+  // Create a type from the availableTables array for type safety
+  type AvailableTable = typeof availableTables[number];
 
   const fetchTableData = async () => {
     if (!selectedTable) return;
@@ -35,9 +38,9 @@ export const DataTroubleshooter = () => {
     setIsLoading(true);
     
     try {
-      // Use type casting to handle table name string safely
+      // Use the table name as a valid Supabase table name
       const { data, error } = await supabase
-        .from(selectedTable as any)
+        .from(selectedTable as AvailableTable)
         .select('*')
         .limit(100);
         
@@ -100,6 +103,7 @@ export const DataTroubleshooter = () => {
         <Separator />
         
         {tableData.length > 0 && (
+          // Pass the tableData as a prop called 'data'
           <TableDataViewer data={tableData} />
         )}
       </CardContent>

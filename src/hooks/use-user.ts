@@ -54,8 +54,8 @@ export function useUser(): UseUserReturn {
           } as UserProfile & { email: string };
           
           // Only add avatar_url if it exists in data
-          if ('avatar_url' in data && data.avatar_url) {
-            userData.avatar_url = data.avatar_url;
+          if (data && 'avatar_url' in data) {
+            userData.avatar_url = data.avatar_url as string | undefined;
           }
           
           setUser(userData);
@@ -97,8 +97,8 @@ export function useUser(): UseUserReturn {
         } as UserProfile & { email: string };
         
         // Only add avatar_url if it exists in data
-        if ('avatar_url' in data && data.avatar_url) {
-          userData.avatar_url = data.avatar_url;
+        if (data && 'avatar_url' in data) {
+          userData.avatar_url = data.avatar_url as string | undefined;
         }
         
         setUser(userData);

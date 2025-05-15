@@ -9,6 +9,12 @@ interface PerformanceOverviewProps {
   stats: DailyStats[];
 }
 
+// Define a new interface for the pie chart data to avoid type conflicts
+interface PieChartData {
+  name: string;
+  value: number;
+}
+
 export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProps) => {
   const metricLabels: { [key: string]: string } = {
     calls: 'Calls',
@@ -32,17 +38,12 @@ export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProp
     qa_assessments: stat.qa_assessments || 0,
   })) as DailyStats[];
   
-  // Create a simplified format for PieChart that only includes necessary fields
-  interface SimplePieChartData {
-    name: string;
-    total: number; // Using total instead of value to match TeamLeadOverview
-  }
-  
-  const formatPieChartData = (metric: string): SimplePieChartData[] => {
+  // Create our simplified PieChartData for the components
+  const createPieChartData = (metric: string, title: string): PieChartData[] => {
     return [
       {
         name: metricLabels[metric] || metric,
-        total: getMetricTotal(metric),
+        value: getMetricTotal(metric)
       }
     ];
   };
@@ -57,40 +58,40 @@ export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProp
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PieChart 
-                data={formatPieChartData('calls')} 
+                data={createPieChartData('calls', 'Call Volume')} 
                 title="Call Volume" 
                 description="Total number of calls handled"
-                metric="total"
+                metric="value"
               />
               <PieChart 
-                data={formatPieChartData('emails')} 
+                data={createPieChartData('emails', 'Email Volume')} 
                 title="Email Volume" 
                 description="Total number of emails handled"
-                metric="total"
+                metric="value"
               />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PieChart 
-                data={formatPieChartData('live_chat')} 
+                data={createPieChartData('live_chat', 'Live Chat Volume')} 
                 title="Live Chat Volume" 
                 description="Total number of live chats handled"
-                metric="total"
+                metric="value"
               />
               <PieChart 
-                data={formatPieChartData('escalations')} 
+                data={createPieChartData('escalations', 'Escalation Volume')} 
                 title="Escalation Volume" 
                 description="Total number of escalations handled"
-                metric="total"
+                metric="value"
               />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PieChart 
-                data={formatPieChartData('qa_assessments')} 
+                data={createPieChartData('qa_assessments', 'QA Assessments')} 
                 title="QA Assessments" 
                 description="Total number of QA assessments performed"
-                metric="total"
+                metric="value"
               />
             </div>
             

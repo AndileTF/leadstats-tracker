@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import { supabase } from "./integrations/supabase/client";
 import { ThemeProvider } from "./components/theme-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +27,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Index />} />
           <Route element={<ProtectedRoute />}>
-            <Route element={<AuthLayout />}>
+            <Route element={<AuthLayout>
+              <Outlet />
+            </AuthLayout>}>
               <Route path="/team-overview" element={<TeamOverview />} />
               <Route path="/team-lead-dashboard" element={<TeamLeadDashboard />} />
               <Route path="/user-management" element={<UserManagement />} />
