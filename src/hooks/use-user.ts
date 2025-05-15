@@ -38,28 +38,33 @@ export function useUser(): UseUserReturn {
         }
 
         try {
-          // Fetch user profile
+          // Use RPC function to avoid infinite recursion in RLS policies
           const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+            .rpc('get_profile_role', { user_id: session.user.id });
 
-          if (error) throw error;
+          if (error) {
+            console.error('Error fetching user role:', error);
+            throw error;
+          }
 
-          // Merge profile data with auth data
+          // Construct user profile manually with auth data
           const userData = {
-            ...data,
+            id: session.user.id,
             email: session.user.email || '',
+            full_name: session.user.user_metadata?.full_name || null,
+            role: data || 'editor',
+            created_at: session.user.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            status: 'active',
           } as UserProfile & { email: string };
           
-          // Only add avatar_url if it exists in data
-          if (data && 'avatar_url' in data) {
-            userData.avatar_url = data.avatar_url as string | undefined;
+          // If avatar_url exists in user_metadata, add it
+          if (session.user.user_metadata?.avatar_url) {
+            userData.avatar_url = session.user.user_metadata.avatar_url as string;
           }
           
           setUser(userData);
-          setIsAdmin(data.role === 'admin');
+          setIsAdmin(data === 'admin');
         } catch (error) {
           console.error('Error loading user data:', error);
         } finally {
@@ -81,28 +86,33 @@ export function useUser(): UseUserReturn {
       }
 
       try {
-        // Fetch user profile
+        // Use RPC function to avoid infinite recursion in RLS policies
         const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+          .rpc('get_profile_role', { user_id: session.user.id });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching user role:', error);
+          throw error;
+        }
 
-        // Merge profile data with auth data
+        // Construct user profile manually with auth data
         const userData = {
-          ...data,
+          id: session.user.id,
           email: session.user.email || '',
+          full_name: session.user.user_metadata?.full_name || null,
+          role: data || 'editor',
+          created_at: session.user.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: 'active',
         } as UserProfile & { email: string };
         
-        // Only add avatar_url if it exists in data
-        if (data && 'avatar_url' in data) {
-          userData.avatar_url = data.avatar_url as string | undefined;
+        // If avatar_url exists in user_metadata, add it
+        if (session.user.user_metadata?.avatar_url) {
+          userData.avatar_url = session.user.user_metadata.avatar_url as string;
         }
         
         setUser(userData);
-        setIsAdmin(data.role === 'admin');
+        setIsAdmin(data === 'admin');
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {

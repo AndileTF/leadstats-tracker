@@ -40,6 +40,7 @@ const Login = () => {
         description: error.message || "Failed to login. Please try again.",
         variant: "destructive",
       });
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
