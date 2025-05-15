@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamLead, DailyStats } from "@/types/teamLead";
 import { StatForm } from "@/components/StatForm";
@@ -259,8 +258,8 @@ export const TeamLeadTabs = ({
             </div>
           )}
 
-          {/* Stats Grid always shown, even with empty data */}
-          <StatsGrid totalStats={totalStats} statsCount={statsCount} />
+          {/* Update StatsGrid to pass stats */}
+          <StatsGrid stats={stats} totalStats={totalStats} statsCount={statsCount} />
 
           {/* Display agents list */}
           {selectedTab === teamLead.id && (

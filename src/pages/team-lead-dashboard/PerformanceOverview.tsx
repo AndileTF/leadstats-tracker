@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { DailyStats, TeamLead } from "@/types/teamLead";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,11 +58,34 @@ export const PerformanceOverview = ({
     const totalEmails = stats.reduce((sum, stat) => sum + (stat.emails || 0), 0);
     const totalLiveChat = stats.reduce((sum, stat) => sum + (stat.live_chat || 0), 0);
     
-    return [
-      { name: 'Calls', value: totalCalls },
-      { name: 'Emails', value: totalEmails },
-      { name: 'Live Chat', value: totalLiveChat }
+    // Return array with correct format that includes required properties for pie chart
+    const distribution = [
+      { name: 'Calls', value: totalCalls, team_lead_id: teamLeadId || '' },
+      { name: 'Emails', value: totalEmails, team_lead_id: teamLeadId || '' },
+      { name: 'Live Chat', value: totalLiveChat, team_lead_id: teamLeadId || '' }
     ];
+    
+    return distribution;
+  };
+  
+  // Convert stats to appropriate format for BarChartComparison
+  const getStatsForBarChart = () => {
+    if (!stats.length) return [];
+    
+    const formattedStats = stats.map(stat => ({
+      ...stat,
+      // Add any required fields for TeamLeadOverview interface
+      name: teamLead?.name || 'Unknown',
+      total_days: 1,
+      total_calls: stat.calls || 0,
+      total_emails: stat.emails || 0,
+      total_live_chat: stat.live_chat || 0,
+      total_escalations: stat.escalations || 0,
+      total_qa_assessments: stat.qa_assessments || 0,
+      total_survey_tickets: stat.survey_tickets || 0,
+    }));
+    
+    return formattedStats;
   };
   
   return (
@@ -192,7 +214,7 @@ export const PerformanceOverview = ({
             <CardContent>
               <div className="h-[350px]">
                 {stats.length > 0 ? (
-                  <BarChartComparison data={stats} />
+                  <BarChartComparison data={getStatsForBarChart()} />
                 ) : (
                   <div className="flex h-full items-center justify-center border border-dashed rounded-md">
                     <p className="text-muted-foreground">No data available</p>

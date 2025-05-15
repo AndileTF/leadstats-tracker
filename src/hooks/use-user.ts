@@ -51,8 +51,8 @@ export function useUser(): UseUserReturn {
           const userData = {
             ...data,
             email: session.user.email || '',
-            // Handle avatar_url safely whether it exists in data or not
-            avatar_url: data.avatar_url || undefined
+            // Only add avatar_url if it exists in data
+            ...(data.avatar_url && { avatar_url: data.avatar_url })
           };
           
           setUser(userData);
@@ -91,8 +91,8 @@ export function useUser(): UseUserReturn {
         const userData = {
           ...data,
           email: session.user.email || '',
-          // Handle avatar_url safely whether it exists in data or not
-          avatar_url: data.avatar_url || undefined
+          // Only add avatar_url if it exists in data
+          ...(data.avatar_url && { avatar_url: data.avatar_url })
         };
         
         setUser(userData);

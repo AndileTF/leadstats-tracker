@@ -2,14 +2,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DailyStats } from "@/types/teamLead";
 import { StatCard } from "./StatCard";
+import { Phone, Mail, MessageSquare, AlertTriangle, FileCheck, Ticket } from "lucide-react";
 
 interface StatsGridProps {
-  stats: DailyStats[];
+  stats?: DailyStats[];
   totalStats?: Record<string, number>;
   statsCount?: number;
 }
 
-export const StatsGrid = ({ stats, totalStats, statsCount = 1 }: StatsGridProps) => {
+export const StatsGrid = ({ stats = [], totalStats, statsCount = 1 }: StatsGridProps) => {
   // If we don't have pre-calculated totals, calculate them from the stats array
   const calculatedTotals = totalStats || stats.reduce(
     (acc, curr) => ({
@@ -54,36 +55,42 @@ export const StatsGrid = ({ stats, totalStats, statsCount = 1 }: StatsGridProps)
               value={calculatedTotals.calls} 
               change={avgCalls}
               isPositive={true}
+              icon={<Phone className="h-4 w-4" />}
             />
             <StatCard 
               title="Total Emails" 
               value={calculatedTotals.emails} 
               change={avgEmails}
               isPositive={true}
+              icon={<Mail className="h-4 w-4" />}
             />
             <StatCard 
               title="Live Chat" 
               value={calculatedTotals.live_chat} 
               change={avgLiveChat}
               isPositive={true}
+              icon={<MessageSquare className="h-4 w-4" />}
             />
             <StatCard 
               title="Escalations" 
               value={calculatedTotals.escalations} 
               change={avgEscalations}
               isPositive={false}
+              icon={<AlertTriangle className="h-4 w-4" />}
             />
             <StatCard 
               title="QA Assessments" 
               value={calculatedTotals.qa_assessments} 
               change={avgQA}
               isPositive={true}
+              icon={<FileCheck className="h-4 w-4" />}
             />
             <StatCard 
               title="Survey Tickets" 
               value={calculatedTotals.survey_tickets || 0} 
               change={avgSurveyTickets}
               isPositive={false}
+              icon={<Ticket className="h-4 w-4" />}
             />
           </div>
         </CardContent>

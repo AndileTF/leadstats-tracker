@@ -85,7 +85,7 @@ export const ComprehensiveDashboard = ({ teamLeadId, teamLeads }: ComprehensiveD
                 <p className="text-muted-foreground">No heatmap data available</p>
               </div>
             ) : (
-              <ChannelHeatmap data={teamData} />
+              <ChannelHeatmap data={teamData} teamLeads={teamLeads} />
             )}
           </CardContent>
         </Card>
@@ -126,7 +126,7 @@ export const ComprehensiveDashboard = ({ teamLeadId, teamLeads }: ComprehensiveD
               <p className="text-muted-foreground">No heatmap data available</p>
             </div>
           ) : (
-            <HeatmapChart data={teamData} />
+            <HeatmapChart data={teamData} teamLeads={teamLeads} />
           )}
         </CardContent>
       </Card>
