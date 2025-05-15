@@ -1,10 +1,11 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DailyStats, TeamLead } from "@/types/teamLead";
 import { useState, useEffect } from "react";
 import { Phone, Mail, MessageSquare, AlertTriangle, FileCheck, Ticket } from "lucide-react";
 
 interface ChannelHeatmapProps {
-  data: DailyStats[] | any[];
+  data: DailyStats[];
   teamLeads: TeamLead[];
 }
 

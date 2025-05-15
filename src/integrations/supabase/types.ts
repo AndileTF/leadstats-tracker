@@ -291,36 +291,6 @@ export type Database = {
           },
         ]
       }
-      profiles: {
-        Row: {
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          role: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          role?: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          full_name?: string | null
-          id?: string
-          role?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       "QA Table": {
         Row: {
           assessment_count: number | null
@@ -410,10 +380,6 @@ export type Database = {
       }
     }
     Functions: {
-      get_profile_role: {
-        Args: { user_id: string }
-        Returns: string
-      }
       get_weekly_stats: {
         Args: { start_date: string }
         Returns: {

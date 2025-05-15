@@ -1,11 +1,12 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DailyStats, TeamLead } from "@/types/teamLead";
+import { DailyStats } from "@/types/teamLead";
 import { useState, useEffect } from "react";
 import { Clock, Users } from "lucide-react";
 
 interface HeatmapProps {
-  data: DailyStats[] | any[];
-  teamLeads: TeamLead[] | { id: string; name: string, assigned_agents_count?: number }[];
+  data: DailyStats[];
+  teamLeads: { id: string; name: string, assigned_agents_count?: number }[];
 }
 
 interface HeatmapCell {

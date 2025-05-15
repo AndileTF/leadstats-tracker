@@ -1,47 +1,33 @@
 
-import { Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "./context/AuthContext";
-
-import Login from "./pages/Login";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
-import TeamOverview from "./pages/TeamOverview";
-import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
-import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
-import AuthLayout from "./components/AuthLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Diagnostics from "./pages/Diagnostics";
+import TeamOverview from "./pages/TeamOverview";
+import { DateProvider } from "./context/DateContext";
 
-function App() {
-  return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-react-theme">
-      <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            {/* Root route */}
-            <Route path="/" element={<Index />} />
-            
-            {/* Routes with AuthLayout */}
-            <Route element={<AuthLayout />}>
-              <Route path="/team-overview" element={<TeamOverview />} />
-              <Route path="/team-lead-dashboard" element={<TeamLeadDashboard />} />
-              <Route path="/user-management" element={<UserManagement />} />
-              <Route path="/diagnostics" element={<Diagnostics />} />
-            </Route>
-          </Route>
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <DateProvider>
         <Toaster />
-      </AuthProvider>
-    </ThemeProvider>
-  );
-}
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<TeamOverview />} />
+            <Route path="/team-lead-dashboard" element={<Index />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </DateProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

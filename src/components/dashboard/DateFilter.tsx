@@ -42,17 +42,10 @@ export const DateFilter = ({ onApplyFilter }: DateFilterProps) => {
     }
 
     console.log("Applying date filter:", tempRange);
-    
-    // Format dates to ensure they match the expected 'YYYY-MM-DD' format for Supabase
-    const formattedRange = {
-      startDate: tempRange.startDate,
-      endDate: tempRange.endDate
-    };
-
-    setDateRange(formattedRange);
+    setDateRange(tempRange);
     toast({
       title: "Filters Applied",
-      description: `Date range: ${formattedRange.startDate} to ${formattedRange.endDate}`,
+      description: `Date range: ${tempRange.startDate} to ${tempRange.endDate}`,
     });
     
     if (onApplyFilter) {

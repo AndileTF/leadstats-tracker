@@ -3,17 +3,15 @@ import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveCon
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TeamLeadOverview } from "@/types/teamLead";
 
-// Define a more general interface that can accept both TeamLeadOverview and simple data
 interface PieChartProps {
-  data: any[];
-  metric: string;
+  data: TeamLeadOverview[];
+  metric: keyof TeamLeadOverview;
   title: string;
-  description?: string;
 }
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f0e', '#2ca02c', '#d62728', '#7f7f7f', '#bcbd22', '#17becf'];
 
-export const PieChart = ({ data, metric, title, description }: PieChartProps) => {
+export const PieChart = ({ data, metric, title }: PieChartProps) => {
   // Filter to only include items with values for the selected metric
   const pieData = data
     .filter(item => item[metric] && Number(item[metric]) > 0)
@@ -29,14 +27,9 @@ export const PieChart = ({ data, metric, title, description }: PieChartProps) =>
     <Card className="mb-6">
       <CardHeader>
         <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-        {description && (
-          <p className="text-muted-foreground text-sm">
-            {description}
-          </p>
-        )}
         {totalSum > 0 && (
           <p className="text-muted-foreground text-sm">
-            Total: {totalSum}
+            Total sum of {title.replace('Distribution of ', '')}: {totalSum}
           </p>
         )}
       </CardHeader>

@@ -1,211 +1,183 @@
+
 import { useState, useEffect } from 'react';
-import { DailyStats, TeamLead } from "@/types/teamLead";
+import { supabase } from "@/integrations/supabase/client";
+import { TeamLead, DailyStats } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { format } from 'date-fns';
-import { Loader2, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { 
-  useTeamLeads, 
-  useDailyStats, 
-  useSurveyTickets,
-  useCalls,
-  useEmails,
-  useLiveChat,
-  useEscalations,
-  useQAAssessments
-} from '@/hooks/use-supabase-data';
-import { supabase } from "@/integrations/supabase/client";
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
+  const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   const [stats, setStats] = useState<DailyStats[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { dateRange } = useDateRange();
-  const [queryLogsVisible, setQueryLogsVisible] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
-  
-  // Log current date range for debugging
-  useEffect(() => {
-    console.log("TeamLeadDashboard: Current date range:", dateRange);
-  }, [dateRange]);
-  
-  // Fetch team leads using our custom hook
-  const { 
-    data: teamLeads, 
-    isLoading: isLoadingTeamLeads, 
-    error: teamLeadsError, 
-    refetch: refetchTeamLeads 
-  } = useTeamLeads();
-  
-  // Debug team leads fetching on initial load
-  useEffect(() => {
-    console.log("TeamLeadDashboard: teamLeads state updated:", {
-      count: teamLeads.length,
-      isLoading: isLoadingTeamLeads,
-      error: teamLeadsError,
-      data: teamLeads
-    });
-  }, [teamLeads, isLoadingTeamLeads, teamLeadsError]);
-  
-  // Fetch daily stats for the selected team lead
-  const { 
-    data: dailyStats, 
-    isLoading: isLoadingDailyStats,
-    error: dailyStatsError,
-    refetch: refetchDailyStats 
-  } = useDailyStats(
-    selectedTeamLead, 
-    dateRange.startDate, 
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
-  
-  // Fetch survey tickets for the selected team lead
-  const { 
-    data: surveyTickets,
-    isLoading: isLoadingSurveyTickets,
-    error: surveyTicketsError,
-    refetch: refetchSurveyTickets
-  } = useSurveyTickets(
-    selectedTeamLead, 
-    dateRange.startDate, 
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
 
-  // Fetch calls data for the selected team lead
-  const {
-    data: calls,
-    refetch: refetchCalls
-  } = useCalls(
-    selectedTeamLead,
-    dateRange.startDate,
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
-  
-  // Fetch emails data for the selected team lead
-  const {
-    data: emails,
-    refetch: refetchEmails
-  } = useEmails(
-    selectedTeamLead,
-    dateRange.startDate,
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
-  
-  // Fetch live chat data for the selected team lead
-  const {
-    data: liveChats,
-    refetch: refetchLiveChats
-  } = useLiveChat(
-    selectedTeamLead,
-    dateRange.startDate,
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
-  
-  // Fetch escalations data for the selected team lead
-  const {
-    data: escalations,
-    refetch: refetchEscalations
-  } = useEscalations(
-    selectedTeamLead,
-    dateRange.startDate,
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
-  
-  // Fetch QA assessments data for the selected team lead
-  const {
-    data: qaAssessments,
-    refetch: refetchQAAssessments
-  } = useQAAssessments(
-    selectedTeamLead,
-    dateRange.startDate,
-    dateRange.endDate,
-    !!selectedTeamLead
-  );
-  
-  // Set selected team lead when teamLeads data loads
   useEffect(() => {
-    console.log('TeamLeadDashboard: teamLeads updated:', {
-      count: teamLeads.length,
-      data: teamLeads.map(tl => `${tl.id} (${tl.name})`)
-    });
+    fetchTeamLeads();
     
-    if (teamLeads.length > 0 && !selectedTeamLead) {
-      const firstTeamLead = teamLeads[0].id;
-      console.log(`Setting selected team lead to first team lead: ${firstTeamLead} (${teamLeads[0].name})`);
-      setSelectedTeamLead(firstTeamLead);
-    }
-  }, [teamLeads, selectedTeamLead]);
-  
-  // Process daily stats and survey tickets data
-  useEffect(() => {
-    if (dailyStats.length === 0 && !isLoadingDailyStats) {
-      console.log('No daily stats data available for processing');
-      setStats([]);
-      return;
-    }
-    
-    console.log('Processing daily stats and survey tickets data', {
-      dailyStats: dailyStats.length,
-      surveyTickets: surveyTickets?.length || 0,
-      calls: calls?.length || 0,
-      emails: emails?.length || 0,
-      liveChats: liveChats?.length || 0,
-      escalations: escalations?.length || 0,
-      qaAssessments: qaAssessments?.length || 0,
-      dateRange
-    });
-    
-    try {
-      // Sort data by date in ascending order
-      const sortedDailyStats = [...dailyStats].sort((a, b) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
+    // Set up realtime subscription for team_leads table
+    const teamLeadsChannel = supabase
+      .channel('dashboard-team-leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_leads'
+        },
+        (payload) => {
+          console.log('Team leads update received:', payload);
+          fetchTeamLeads();
+          toast({
+            title: "Team Leads Updated",
+            description: "Team leads data has been refreshed",
+          });
+        }
+      )
+      .subscribe();
       
+    return () => {
+      supabase.removeChannel(teamLeadsChannel);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedTeamLead) return;
+
+    // Set up multiple channels for different tables
+    const dailyStatsChannel = supabase
+      .channel('dashboard-daily-stats-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_stats',
+          filter: `team_lead_id=eq.${selectedTeamLead}`
+        },
+        (payload) => {
+          console.log('Daily stats update received:', payload);
+          const changeDate = (payload.new as DailyStats).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchStats();
+            toast({
+              title: "Data Updated",
+              description: "Dashboard data has been refreshed",
+            });
+          }
+        }
+      )
+      .subscribe();
+      
+    // Set up subscription for survey tickets table
+    const surveyTicketsChannel = supabase
+      .channel('dashboard-survey-tickets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'After Call Survey Tickets',
+          filter: `team_lead_id=eq.${selectedTeamLead}`
+        },
+        (payload) => {
+          console.log('Survey tickets update received:', payload);
+          const changeDate = (payload.new as any).date;
+          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+            fetchStats();
+            toast({
+              title: "Survey Data Updated",
+              description: "Survey tickets data has been refreshed",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    fetchStats();
+
+    return () => {
+      supabase.removeChannel(dailyStatsChannel);
+      supabase.removeChannel(surveyTicketsChannel);
+    };
+  }, [selectedTeamLead, dateRange]);
+
+  const fetchTeamLeads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('team_leads')
+        .select('*');
+
+      if (error) throw error;
+
+      setTeamLeads(data);
+      if (data.length > 0 && !selectedTeamLead) {
+        setSelectedTeamLead(data[0].id);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch team leads",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    if (!selectedTeamLead) return;
+
+    try {
+      console.log('Fetching stats with date range:', dateRange);
+      setIsLoading(true);
+      
+      // First, get all unique dates in the range
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      const dateArray = [];
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        dateArray.push(format(date, 'yyyy-MM-dd'));
+      }
+
+      // Fetch daily stats
+      const { data: dailyStats, error: dailyStatsError } = await supabase
+        .from('daily_stats')
+        .select('*')
+        .eq('team_lead_id', selectedTeamLead)
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate)
+        .order('date', { ascending: false });
+
+      if (dailyStatsError) throw dailyStatsError;
+      console.log('Daily stats:', dailyStats);
+
+      // Fetch survey tickets
+      const { data: surveyTickets, error: surveyError } = await supabase
+        .from('After Call Survey Tickets')
+        .select('*')
+        .eq('team_lead_id', selectedTeamLead)
+        .gte('date', dateRange.startDate)
+        .lte('date', dateRange.endDate);
+
+      if (surveyError) throw surveyError;
+      console.log('Survey tickets:', surveyTickets);
+
       // Create a map of dates to survey ticket counts
       const surveyTicketMap = surveyTickets?.reduce((acc: { [key: string]: number }, ticket) => {
         acc[ticket.date] = (acc[ticket.date] || 0) + (ticket.ticket_count || 0);
         return acc;
-      }, {}) || {};
-      
-      // First, get all unique dates in the range
-      if (!dateRange.startDate || !dateRange.endDate) {
-        console.error("Missing date range for processing stats");
-        setStats([]);
-        return;
-      }
-      
-      const startDate = new Date(dateRange.startDate);
-      const endDate = new Date(dateRange.endDate);
-      
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        console.error("Invalid date range", { startDate, endDate, dateRange });
-        toast({
-          title: "Error",
-          description: "Invalid date range selected",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const dateArray: string[] = [];
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        dateArray.push(format(date, 'yyyy-MM-dd'));
-      }
-      
-      // Combine daily stats with survey tickets
+      }, {});
+
+      // Create or update stats for each date
       const combinedStats = dateArray.map(date => {
-        const existingStat = sortedDailyStats?.find(stat => stat.date === date) || {
+        const existingStat = dailyStats?.find(stat => stat.date === date) || {
           id: `temp-${date}`,
-          team_lead_id: selectedTeamLead || '',
+          team_lead_id: selectedTeamLead,
           date: date,
           calls: 0,
           emails: 0,
@@ -219,335 +191,26 @@ const TeamLeadDashboard = () => {
 
         return {
           ...existingStat,
-          survey_tickets: surveyTicketMap[date] || 0
+          survey_tickets: surveyTicketMap?.[date] || 0
         };
       });
-      
-      console.log(`Processed ${combinedStats.length} daily stats records with survey tickets`);
+
+      console.log('Combined stats:', combinedStats);
       setStats(combinedStats);
-    } catch (error: any) {
-      console.error('Error processing stats data:', error);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
       toast({
         title: "Error",
-        description: `Failed to process stats data: ${error.message}`,
+        description: "Failed to fetch stats",
         variant: "destructive",
       });
-    }
-  }, [dailyStats, surveyTickets, calls, emails, liveChats, escalations, qaAssessments, dateRange]);
-  
-  // Set up realtime subscriptions
-  useEffect(() => {
-    console.log('Setting up realtime subscriptions');
-    
-    // Team leads subscription
-    const teamLeadsChannel = supabase
-      .channel('dashboard-team-leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'team_leads'
-        },
-        (payload) => {
-          console.log('Team leads update received:', payload);
-          refetchTeamLeads();
-          toast({
-            title: "Team Leads Updated",
-            description: "Team leads data has been refreshed",
-          });
-        }
-      )
-      .subscribe();
-      
-    // Daily stats subscription - only set up if we have a selected team lead
-    let dailyStatsChannel;
-    let surveyTicketsChannel;
-    let callsChannel;
-    let emailsChannel;
-    let liveChatChannel;
-    let escalationsChannel;
-    let qaAssessmentsChannel;
-    
-    if (selectedTeamLead) {
-      dailyStatsChannel = supabase
-        .channel('dashboard-daily-stats-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'daily_stats',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          (payload) => {
-            console.log('Daily stats update received:', payload);
-            refetchDailyStats();
-            toast({
-              title: "Data Updated",
-              description: "Dashboard data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-      
-      surveyTicketsChannel = supabase
-        .channel('dashboard-survey-tickets-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'After Call Survey Tickets',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          (payload) => {
-            console.log('Survey tickets update received:', payload);
-            refetchSurveyTickets();
-            toast({
-              title: "Survey Data Updated",
-              description: "Survey tickets data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-        
-      callsChannel = supabase
-        .channel('dashboard-calls-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Calls',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          () => {
-            refetchCalls();
-            toast({
-              title: "Calls Data Updated",
-              description: "Call data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-        
-      emailsChannel = supabase
-        .channel('dashboard-emails-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Emails',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          () => {
-            refetchEmails();
-            toast({
-              title: "Emails Data Updated",
-              description: "Email data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-        
-      liveChatChannel = supabase
-        .channel('dashboard-livechat-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Live Chat',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          () => {
-            refetchLiveChats();
-            toast({
-              title: "Live Chat Data Updated",
-              description: "Live chat data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-        
-      escalationsChannel = supabase
-        .channel('dashboard-escalations-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'Escalations',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          () => {
-            refetchEscalations();
-            toast({
-              title: "Escalations Data Updated",
-              description: "Escalation data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-        
-      qaAssessmentsChannel = supabase
-        .channel('dashboard-qa-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'QA Table',
-            filter: `team_lead_id=eq.${selectedTeamLead}`
-          },
-          () => {
-            refetchQAAssessments();
-            toast({
-              title: "QA Data Updated",
-              description: "QA assessment data has been refreshed",
-            });
-          }
-        )
-        .subscribe();
-    }
-      
-    return () => {
-      console.log('Cleaning up TeamLeadDashboard subscriptions');
-      supabase.removeChannel(teamLeadsChannel);
-      if (dailyStatsChannel) supabase.removeChannel(dailyStatsChannel);
-      if (surveyTicketsChannel) supabase.removeChannel(surveyTicketsChannel);
-      if (callsChannel) supabase.removeChannel(callsChannel);
-      if (emailsChannel) supabase.removeChannel(emailsChannel);
-      if (liveChatChannel) supabase.removeChannel(liveChatChannel);
-      if (escalationsChannel) supabase.removeChannel(escalationsChannel);
-      if (qaAssessmentsChannel) supabase.removeChannel(qaAssessmentsChannel);
-    };
-  }, [
-    selectedTeamLead, 
-    refetchTeamLeads, 
-    refetchDailyStats, 
-    refetchSurveyTickets,
-    refetchCalls,
-    refetchEmails,
-    refetchLiveChats,
-    refetchEscalations,
-    refetchQAAssessments
-  ]);
-
-  const handleRefreshTeamLeads = async () => {
-    toast({
-      title: "Refreshing Team Leads",
-      description: "Fetching latest team leads data...",
-    });
-    
-    await refetchTeamLeads();
-    console.log("Team leads refreshed, new count:", teamLeads.length);
-    
-    if (teamLeads.length === 0) {
-      // If no team leads are found, attempt to fetch directly from the database
-      try {
-        const { data, error } = await supabase
-          .from('team_leads')
-          .select('*');
-        
-        console.log("Direct team leads query result:", { 
-          data: data?.length || 0,
-          error: error?.message || null
-        });
-        
-        if (data && data.length > 0) {
-          toast({
-            title: "Found Team Leads",
-            description: `Direct query found ${data.length} team leads`,
-          });
-        }
-      } catch (err) {
-        console.error("Error in direct team leads query:", err);
-      }
-    }
-  };
-
-  const handleRefresh = () => {
-    console.log('Manual refresh requested');
-    refetchTeamLeads();
-    
-    if (selectedTeamLead) {
-      refetchDailyStats();
-      refetchSurveyTickets();
-      refetchCalls();
-      refetchEmails();
-      refetchLiveChats();
-      refetchEscalations();
-      refetchQAAssessments();
-      
-      toast({
-        title: "Refreshing Data",
-        description: "Fetching latest team lead data...",
-      });
-    }
-  };
-  
-  const fetchStats = () => {
-    console.log('Fetching stats...', { 
-      selectedTeamLead, 
-      startDate: dateRange.startDate, 
-      endDate: dateRange.endDate 
-    });
-    
-    if (selectedTeamLead) {
-      refetchDailyStats();
-      refetchSurveyTickets();
-      refetchCalls();
-      refetchEmails();
-      refetchLiveChats();
-      refetchEscalations();
-      refetchQAAssessments();
-      
-      // Show temporary toast to confirm fetching
-      toast({
-        title: "Fetching Data",
-        description: `Requesting data for ${dateRange.startDate} to ${dateRange.endDate}`,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "No team lead selected",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const isLoading = isLoadingTeamLeads && teamLeads.length === 0;
-  const hasDataErrors = dailyStatsError || surveyTicketsError;
-  
-  // Diagnostic information
-  const diagnosticInfo = {
-    selectedTeamLead,
-    dateRange,
-    dailyStatsCount: dailyStats.length,
-    surveyTicketsCount: surveyTickets?.length || 0,
-    callsCount: calls?.length || 0,
-    emailsCount: emails?.length || 0,
-    liveChatCount: liveChats?.length || 0,
-    escalationsCount: escalations?.length || 0,
-    qaAssessmentsCount: qaAssessments?.length || 0,
-    isLoadingDailyStats,
-    isLoadingSurveyTickets,
-    errors: {
-      dailyStats: dailyStatsError,
-      surveyTickets: surveyTicketsError
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-6">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg">Loading dashboard data...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   return (
@@ -559,127 +222,14 @@ const TeamLeadDashboard = () => {
           onApplyFilter={fetchStats}
         />
         
-        {teamLeadsError ? (
-          <div className="bg-destructive/10 border border-destructive rounded-md p-4 space-y-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-              <div>
-                <p className="text-destructive font-medium">Error loading team leads</p>
-                <p className="text-destructive/70 text-sm mt-1">
-                  {teamLeadsError}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline"
-                onClick={handleRefresh}
-                className="w-full sm:w-auto"
-              >
-                Try again
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleRefreshTeamLeads}
-                className="w-full sm:w-auto"
-              >
-                Refresh Team Leads Only
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setDebugMode(!debugMode)}
-                className="w-full sm:w-auto"
-              >
-                {debugMode ? 'Hide' : 'Show'} Debug Info
-              </Button>
-            </div>
-            {debugMode && (
-              <div className="mt-4 p-3 bg-slate-900 text-slate-200 rounded-md overflow-auto text-xs">
-                <pre>
-                  {JSON.stringify({
-                    teamLeadsError, 
-                    teamLeadsCount: teamLeads.length,
-                    dateRange,
-                    selectedTeamLead
-                  }, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        ) : teamLeads.length === 0 ? (
-          <div className="text-center p-8 bg-muted/50 rounded-lg border space-y-4">
-            <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground" />
-            <div>
-              <p className="text-lg font-medium">No team leads found</p>
-              <p className="text-muted-foreground mt-2">
-                There are no team leads available in the database.
-              </p>
-              <Button 
-                variant="outline"
-                onClick={handleRefreshTeamLeads}
-                className="mt-4"
-              >
-                Refresh Team Leads
-              </Button>
-              <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-md">
-                <h3 className="font-medium mb-2">Common Reasons:</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>No data exists in the team_leads table</li>
-                  <li>Database connection issues</li>
-                  <li>Row Level Security (RLS) policies blocking access</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {hasDataErrors && (
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-                  <div>
-                    <p className="text-amber-800 font-medium">Data retrieval issues detected</p>
-                    <p className="text-amber-700 text-sm mt-1">
-                      There was an issue fetching some data. Please check the date range and try again.
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 text-xs"
-                      onClick={() => setQueryLogsVisible(!queryLogsVisible)}
-                    >
-                      {queryLogsVisible ? 'Hide Details' : 'Show Details'}
-                    </Button>
-                    
-                    {queryLogsVisible && (
-                      <pre className="bg-slate-800 text-white p-2 rounded text-xs mt-2 overflow-auto max-h-48">
-                        {JSON.stringify(diagnosticInfo, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <Button 
-                    variant="default"
-                    size="sm"
-                    onClick={fetchStats}
-                  >
-                    Retry Data Fetch
-                  </Button>
-                </div>
-              </div>
-            )}
-              
-            <DashboardContent
-              teamLeads={teamLeads}
-              selectedTeamLead={selectedTeamLead}
-              setSelectedTeamLead={setSelectedTeamLead}
-              showForm={showForm}
-              stats={stats}
-              fetchStats={fetchStats}
-            />
-          </>
-        )}
+        <DashboardContent
+          teamLeads={teamLeads}
+          selectedTeamLead={selectedTeamLead}
+          setSelectedTeamLead={setSelectedTeamLead}
+          showForm={showForm}
+          stats={stats}
+          fetchStats={fetchStats}
+        />
       </div>
     </div>
   );
