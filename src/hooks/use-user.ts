@@ -1,12 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 
 type UserProfile = {
   id: string;
   email: string;
-  full_name: string;
+  full_name: string | null;
   role: string;
   created_at: string;
   updated_at: string;
@@ -49,12 +48,14 @@ export function useUser(): UseUserReturn {
           if (error) throw error;
 
           // Merge profile data with auth data
-          setUser({
+          const userData = {
             ...data,
             email: session.user.email || '',
+            // Handle avatar_url safely whether it exists in data or not
             avatar_url: data.avatar_url || undefined
-          });
+          };
           
+          setUser(userData);
           setIsAdmin(data.role === 'admin');
         } catch (error) {
           console.error('Error loading user data:', error);
@@ -87,12 +88,14 @@ export function useUser(): UseUserReturn {
         if (error) throw error;
 
         // Merge profile data with auth data
-        setUser({
+        const userData = {
           ...data,
           email: session.user.email || '',
+          // Handle avatar_url safely whether it exists in data or not
           avatar_url: data.avatar_url || undefined
-        });
+        };
         
+        setUser(userData);
         setIsAdmin(data.role === 'admin');
       } catch (error) {
         console.error('Error loading user data:', error);

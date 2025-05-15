@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { DailyStats, TeamLead } from "@/types/teamLead";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { AddStatForm } from "./AddStatForm";
 import { TeamLeadSelector } from "./TeamLeadSelector";
 import { PerformanceOverview } from "./PerformanceOverview";
@@ -35,6 +35,7 @@ export const DashboardContent = ({
 }: DashboardContentProps) => {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { dateRange } = useDateRange();
+  const { toast } = useToast();
   
   // Check for empty data situations
   const noStats = stats.length === 0;
@@ -43,7 +44,7 @@ export const DashboardContent = ({
     if (selectedTeamLead && dateRange.startDate && dateRange.endDate) {
       fetchStats();
     }
-  }, [selectedTeamLead, dateRange.startDate, dateRange.endDate]);
+  }, [selectedTeamLead, dateRange.startDate, dateRange.endDate, fetchStats]);
 
   if (noStats && selectedTeamLead) {
     return (
@@ -160,8 +161,8 @@ export const DashboardContent = ({
 
       {activeTab === "comparison" && (
         <ComprehensiveDashboard 
+          teamLeadId={selectedTeamLead}
           teamLeads={teamLeads}
-          currentTeamLeadId={selectedTeamLead}
         />
       )}
     </div>
