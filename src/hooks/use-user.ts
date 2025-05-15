@@ -1,85 +1,121 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 
-// Define the User type
-export interface User {
+type UserProfile = {
   id: string;
   email: string;
-  avatar_url?: string;
-  role?: string;
-}
+  full_name: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  avatar_url?: string; // Make this optional since it might not exist
+};
 
-export function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+type UseUserReturn = {
+  user: (UserProfile & { email: string }) | null;
+  isLoading: boolean;
+  isAdmin: boolean;
+  signOut: () => Promise<void>;
+};
+
+export function useUser(): UseUserReturn {
+  const [user, setUser] = useState<(UserProfile & { email: string }) | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    // Get the current user session
-    const getUser = async () => {
-      setIsLoading(true);
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          const { data: profile } = await supabase
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setIsLoading(true);
+        if (!session) {
+          setUser(null);
+          setIsAdmin(false);
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          // Fetch user profile
+          const { data, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
-          
+
+          if (error) throw error;
+
+          // Merge profile data with auth data
           setUser({
-            id: session.user.id,
+            ...data,
             email: session.user.email || '',
-            avatar_url: profile?.avatar_url,
-            role: profile?.role
+            avatar_url: data.avatar_url || undefined
           });
+          
+          setIsAdmin(data.role === 'admin');
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        } finally {
+          setIsLoading(false);
         }
+      }
+    );
+
+    // Initial check for session
+    const fetchUserData = async () => {
+      setIsLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setUser(null);
+        setIsAdmin(false);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch user profile
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) throw error;
+
+        // Merge profile data with auth data
+        setUser({
+          ...data,
+          email: session.user.email || '',
+          avatar_url: data.avatar_url || undefined
+        });
+        
+        setIsAdmin(data.role === 'admin');
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error loading user data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    getUser();
-
-    // Set up listener for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-          });
-        } else {
-          setUser(null);
-        }
-        setIsLoading(false);
-      }
-    );
+    fetchUserData();
 
     return () => {
-      subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  // Sign out function
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      return true;
-    } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
-    }
+    await supabase.auth.signOut();
   };
 
   return {
     user,
     isLoading,
-    signOut,
+    isAdmin,
+    signOut
   };
 }
