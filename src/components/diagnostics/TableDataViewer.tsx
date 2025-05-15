@@ -7,36 +7,42 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Define known tables as a type to ensure type safety
-type KnownTable = 
-  | "After Call Survey Tickets" 
-  | "Calls" 
-  | "Emails" 
-  | "QA Table" 
-  | "agents" 
-  | "Escalations" 
-  | "Live Chat" 
-  | "team_leads" 
-  | "daily_stats" 
-  | "profiles";
+// Define props interface for TableDataViewer
+interface TableDataViewerProps {
+  data?: any[];
+}
 
-const TABLES: KnownTable[] = [
-  "After Call Survey Tickets",
-  "Calls",
-  "Emails", 
-  "QA Table", 
-  "agents", 
-  "Escalations", 
-  "Live Chat", 
-  "team_leads", 
-  "daily_stats"
-];
-
-export const TableDataViewer = () => {
+export const TableDataViewer = ({ data }: TableDataViewerProps) => {
   const [tableData, setTableData] = useState<Record<string, any[] | null>>({});
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const { toast } = useToast();
+
+  // Define known tables as a type to ensure type safety
+  type KnownTable = 
+    | "After Call Survey Tickets" 
+    | "Calls" 
+    | "Emails" 
+    | "QA Table" 
+    | "agents" 
+    | "Escalations" 
+    | "Live Chat" 
+    | "team_leads" 
+    | "daily_stats"
+    | "profiles";
+
+  const TABLES: KnownTable[] = [
+    "After Call Survey Tickets",
+    "Calls",
+    "Emails", 
+    "QA Table", 
+    "agents", 
+    "Escalations", 
+    "Live Chat", 
+    "team_leads", 
+    "daily_stats",
+    "profiles"
+  ];
 
   const fetchTableData = async (tableName: KnownTable) => {
     try {
@@ -74,6 +80,36 @@ export const TableDataViewer = () => {
       fetchTableData(table);
     });
   };
+
+  // If data is provided directly as a prop, display it instead of fetching tables
+  if (data && data.length > 0) {
+    return (
+      <div className="space-y-4 mt-4">
+        <div className="overflow-x-auto border rounded-md">
+          <table className="w-full text-sm">
+            <thead className="bg-muted">
+              <tr>
+                {Object.keys(data[0]).map((key) => (
+                  <th key={key} className="p-2 text-left font-medium">{key}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, index) => (
+                <tr key={index} className="border-t hover:bg-muted/50">
+                  {Object.values(row).map((value, i) => (
+                    <td key={i} className="p-2">
+                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

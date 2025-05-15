@@ -103,7 +103,6 @@ export const DataTroubleshooter = () => {
         <Separator />
         
         {tableData.length > 0 && (
-          // Pass the tableData as a prop called 'data'
           <TableDataViewer data={tableData} />
         )}
       </CardContent>
