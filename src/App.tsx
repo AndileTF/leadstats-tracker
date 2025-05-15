@@ -1,6 +1,5 @@
 
 import { Routes, Route } from "react-router-dom";
-import { supabase } from "./integrations/supabase/client";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "./context/AuthContext";
@@ -20,20 +19,15 @@ function App() {
     <ThemeProvider defaultTheme="dark" storageKey="vite-react-theme">
       <AuthProvider>
         <Routes>
+          {/* Public routes */}
           <Route path="/login" element={<Login />} />
           
-          {/* Root route that's protected but uses its own layout */}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Protected routes with shared AuthLayout */}
+          {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
+            {/* Root route */}
+            <Route path="/" element={<Index />} />
+            
+            {/* Routes with AuthLayout */}
             <Route element={<AuthLayout />}>
               <Route path="/team-overview" element={<TeamOverview />} />
               <Route path="/team-lead-dashboard" element={<TeamLeadDashboard />} />

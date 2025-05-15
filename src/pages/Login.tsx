@@ -20,10 +20,10 @@ const Login = () => {
   // Redirect if user is already authenticated
   useEffect(() => {
     if (session) {
-      const from = location.state?.from?.pathname || "/";
+      const from = location.state?.from || "/";
       navigate(from, { replace: true });
     }
-  }, [session, navigate, location]);
+  }, [session, navigate, location.state]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

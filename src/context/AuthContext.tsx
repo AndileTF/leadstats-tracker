@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 type AuthContextType = {
   session: Session | null;
@@ -21,15 +22,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // First set up the auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      console.log('Auth state changed:', event, currentSession?.user?.email);
+      
+      // Only update state if there's an actual change to prevent loops
+      if (JSON.stringify(session?.user?.id) !== JSON.stringify(currentSession?.user?.id)) {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+      }
       
       // Check if user is admin - defer with setTimeout to prevent infinite recursion
-      if (session?.user) {
+      if (currentSession?.user) {
         setTimeout(() => {
-          checkUserRole(session.user.id);
+          checkUserRole(currentSession.user.id);
         }, 0);
       } else {
         setIsAdmin(false);
@@ -40,16 +45,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Then check for existing session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
         
-        if (session?.user) {
-          await checkUserRole(session.user.id);
+        if (initialSession?.user) {
+          await checkUserRole(initialSession.user.id);
+        } else {
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -69,6 +75,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) {
         console.error('Error fetching user role:', error);
+        toast({
+          title: "Authentication Error",
+          description: "Could not verify user permissions. Please try logging in again.",
+          variant: "destructive",
+        });
         setIsAdmin(false);
       } else {
         setIsAdmin(data === 'admin');
@@ -82,10 +93,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    setIsLoading(true);
     try {
       await supabase.auth.signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Sign out failed",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
