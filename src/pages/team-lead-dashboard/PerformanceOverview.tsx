@@ -1,230 +1,110 @@
-import { useState } from "react";
-import { DailyStats, TeamLead } from "@/types/teamLead";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart } from "@/components/dashboard/LineChart";
-import { BarChartComparison } from "@/components/dashboard/BarChartComparison";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart } from "@/components/dashboard/PieChart";
-import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
+import { LineChart } from "@/components/dashboard/LineChart";
+import { TeamLeadOverview, DailyStats, TeamLead } from "@/types/teamLead";
 
 interface PerformanceOverviewProps {
+  teamLead: TeamLead | null;
   stats: DailyStats[];
-  teamLeadId: string | null;
-  teamLeads: TeamLead[];
 }
 
-export const PerformanceOverview = ({ 
-  stats, 
-  teamLeadId,
-  teamLeads 
-}: PerformanceOverviewProps) => {
-  const [metric, setMetric] = useState<string>("calls");
-  const teamLead = teamLeads.find(tl => tl.id === teamLeadId);
-  
-  // Calculate totals and averages
-  const calculateSummary = () => {
-    if (!stats.length) return {
-      total: 0,
-      average: 0,
-      max: 0,
-      lastUpdated: null
-    };
-    
-    const values = stats.map(s => s[metric as keyof DailyStats] as number || 0);
-    const total = values.reduce((a, b) => a + b, 0);
-    const average = total / stats.length;
-    const max = Math.max(...values);
-    
-    // Find the most recent date
-    const dates = stats.map(s => new Date(s.created_at));
-    const lastUpdated = new Date(Math.max(...dates.map(d => d.getTime())));
-    
-    return {
-      total,
-      average: parseFloat(average.toFixed(2)),
-      max,
-      lastUpdated
-    };
+export const PerformanceOverview = ({ teamLead, stats }: PerformanceOverviewProps) => {
+  const metricLabels: { [key: string]: string } = {
+    calls: 'Calls',
+    emails: 'Emails',
+    live_chat: 'Live Chat',
+    escalations: 'Escalations',
+    qa_assessments: 'QA Assessments'
   };
   
-  const summary = calculateSummary();
+  const getMetricTotal = (metric: string): number => {
+    return stats.reduce((acc, curr) => acc + (curr[metric] || 0), 0);
+  };
   
-  // Distribution for pie chart
-  const getChannelDistribution = () => {
-    if (!stats.length) return [];
-    
-    const totalCalls = stats.reduce((sum, stat) => sum + (stat.calls || 0), 0);
-    const totalEmails = stats.reduce((sum, stat) => sum + (stat.emails || 0), 0);
-    const totalLiveChat = stats.reduce((sum, stat) => sum + (stat.live_chat || 0), 0);
-    
-    // Return array with correct format that includes required properties for pie chart
-    const distribution = [
-      { name: 'Calls', value: totalCalls, team_lead_id: teamLeadId || '' },
-      { name: 'Emails', value: totalEmails, team_lead_id: teamLeadId || '' },
-      { name: 'Live Chat', value: totalLiveChat, team_lead_id: teamLeadId || '' }
+  const dailyStatsForChart = stats.map(stat => ({
+    date: stat.date,
+    calls: stat.calls || 0,
+    emails: stat.emails || 0,
+    live_chat: stat.live_chat || 0,
+    escalations: stat.escalations || 0,
+    qa_assessments: stat.qa_assessments || 0
+  }));
+  
+  const formatPieChartData = (metric: string): TeamLeadOverview[] => {
+    // Create a complete TeamLeadOverview object for chart display
+    return [
+      {
+        name: metricLabels[metric] || metric,
+        value: getMetricTotal(metric),
+        team_lead_id: teamLead?.id || '',
+        total_days: 0,
+        total_calls: getMetricTotal('calls'),
+        total_emails: getMetricTotal('emails'),
+        total_live_chat: getMetricTotal('live_chat'),
+        total_escalations: getMetricTotal('escalations'),
+        total_qa_assessments: getMetricTotal('qa_assessments'),
+        total_survey_tickets: 0,
+        average_sla: 0
+      }
     ];
-    
-    return distribution;
-  };
-  
-  // Convert stats to appropriate format for BarChartComparison
-  const getStatsForBarChart = () => {
-    if (!stats.length) return [];
-    
-    const formattedStats = stats.map(stat => ({
-      ...stat,
-      // Add any required fields for TeamLeadOverview interface
-      name: teamLead?.name || 'Unknown',
-      total_days: 1,
-      total_calls: stat.calls || 0,
-      total_emails: stat.emails || 0,
-      total_live_chat: stat.live_chat || 0,
-      total_escalations: stat.escalations || 0,
-      total_qa_assessments: stat.qa_assessments || 0,
-      total_survey_tickets: stat.survey_tickets || 0,
-    }));
-    
-    return formattedStats;
   };
   
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Team Lead</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teamLead?.name || 'Unknown'}</div>
-            {teamLead?.assigned_agents_count !== undefined && (
-              <div className="mt-2 flex items-center">
-                <Badge variant="outline">
-                  {teamLead.assigned_agents_count} agents
-                </Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total {metric}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.total}</div>
-            <p className="text-xs text-muted-foreground">
-              Over {stats.length} days
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Average per day</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.average}</div>
-            <p className="text-xs text-muted-foreground">
-              {metric} per day
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Last updated</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-medium">
-              {summary.lastUpdated 
-                ? formatDistanceToNow(summary.lastUpdated, { addSuffix: true }) 
-                : 'Never'
-              }
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Team Lead Performance Overview</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {teamLead ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PieChart 
+                data={formatPieChartData('calls')} 
+                title="Call Volume" 
+                description="Total number of calls handled"
+                metric="value"
+              />
+              <PieChart 
+                data={formatPieChartData('emails')} 
+                title="Email Volume" 
+                description="Total number of emails handled"
+                metric="value"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.length} total records
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Tabs defaultValue="trend" className="w-full">
-        <TabsList>
-          <TabsTrigger value="trend">Trend Analysis</TabsTrigger>
-          <TabsTrigger value="distribution">Channel Distribution</TabsTrigger>
-          <TabsTrigger value="metrics">Metrics</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="trend" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Trend</CardTitle>
-              <CardDescription>
-                Daily performance for {teamLead?.name || 'selected team lead'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                {stats.length > 0 ? (
-                  <LineChart 
-                    data={stats} 
-                    teamLeadName={teamLead?.name || 'Team Lead'} 
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center border border-dashed rounded-md">
-                    <p className="text-muted-foreground">No data available</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="distribution" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Channel Distribution</CardTitle>
-              <CardDescription>
-                Breakdown of communication channels
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                {stats.length > 0 ? (
-                  <PieChart data={getChannelDistribution()} />
-                ) : (
-                  <div className="flex h-full items-center justify-center border border-dashed rounded-md">
-                    <p className="text-muted-foreground">No data available</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="metrics" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Key Metrics Comparison</CardTitle>
-              <CardDescription>
-                Compare important performance indicators
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                {stats.length > 0 ? (
-                  <BarChartComparison data={getStatsForBarChart()} />
-                ) : (
-                  <div className="flex h-full items-center justify-center border border-dashed rounded-md">
-                    <p className="text-muted-foreground">No data available</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PieChart 
+                data={formatPieChartData('live_chat')} 
+                title="Live Chat Volume" 
+                description="Total number of live chats handled"
+                metric="value"
+              />
+              <PieChart 
+                data={formatPieChartData('escalations')} 
+                title="Escalation Volume" 
+                description="Total number of escalations handled"
+                metric="value"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PieChart 
+                data={formatPieChartData('qa_assessments')} 
+                title="QA Assessments" 
+                description="Total number of QA assessments performed"
+                metric="value"
+              />
+            </div>
+            
+            <LineChart 
+              data={dailyStatsForChart} 
+              teamLeadName={teamLead.name} 
+            />
+          </>
+        ) : (
+          <p>No team lead selected.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 };

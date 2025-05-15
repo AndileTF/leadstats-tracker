@@ -51,9 +51,12 @@ export function useUser(): UseUserReturn {
           const userData = {
             ...data,
             email: session.user.email || '',
-            // Only add avatar_url if it exists in data
-            ...(data.avatar_url && { avatar_url: data.avatar_url })
           };
+          
+          // Only add avatar_url if it exists in data
+          if (data.avatar_url) {
+            userData.avatar_url = data.avatar_url;
+          }
           
           setUser(userData);
           setIsAdmin(data.role === 'admin');
@@ -91,9 +94,12 @@ export function useUser(): UseUserReturn {
         const userData = {
           ...data,
           email: session.user.email || '',
-          // Only add avatar_url if it exists in data
-          ...(data.avatar_url && { avatar_url: data.avatar_url })
         };
+        
+        // Only add avatar_url if it exists in data
+        if (data.avatar_url) {
+          userData.avatar_url = data.avatar_url;
+        }
         
         setUser(userData);
         setIsAdmin(data.role === 'admin');
