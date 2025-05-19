@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useUser } from "@/hooks/useUser";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, UserPlus } from "lucide-react";
+import { LogOut, User, UserPlus, Shield } from "lucide-react";
 
 export const NavBar = () => {
   const { user, signOut } = useAuth();
@@ -19,9 +19,12 @@ export const NavBar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <div className="text-sm text-muted-foreground hidden md:block">
-                {profile?.full_name || user.email}
-              </div>
+              <Button variant="ghost" asChild>
+                <Link to="/profile" className="text-sm flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden md:inline">{profile?.full_name || user.email}</span>
+                </Link>
+              </Button>
               
               {isAdmin && (
                 <Button variant="ghost" asChild>

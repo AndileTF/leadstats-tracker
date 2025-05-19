@@ -12,6 +12,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   createUser: (email: string, password: string, fullName: string, role: string) => Promise<void>;
+  forcePasswordChange: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forcePasswordChange, setForcePasswordChange] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener first
@@ -42,6 +44,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Check if user needs to change password
+        if (currentSession?.user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('password_changed')
+            .eq('id', currentSession.user.id)
+            .single();
+          
+          if (!error && data) {
+            setForcePasswordChange(!data.password_changed);
+          }
+        }
       } catch (error) {
         console.error("Error initializing auth:", error);
       } finally {
@@ -60,6 +75,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         throw error;
+      }
+      
+      // Check if user needs to change password on first login
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('password_changed')
+        .eq('email', email)
+        .single();
+      
+      if (!profileError && data) {
+        setForcePasswordChange(!data.password_changed);
       }
       
       toast({
@@ -144,7 +170,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Then manually update the role in profiles table if needed
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ role })
+          .update({ 
+            role,
+            password_changed: false // Force new users to change password
+          })
           .eq('id', signUpData.user.id);
           
         if (updateError) throw updateError;
@@ -174,6 +203,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signUp,
         signOut,
         createUser,
+        forcePasswordChange,
       }}
     >
       {children}

@@ -19,6 +19,7 @@ import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import NotFound from "./pages/NotFound";
 import TeamOverview from "./pages/TeamOverview";
+import ProfilePage from "./pages/profile/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,19 @@ const App = () => {
                       <>
                         <NavBar />
                         <TeamOverview />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Profile Page Route */}
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <>
+                        <NavBar />
+                        <ProfilePage />
                       </>
                     </ProtectedRoute>
                   } 
