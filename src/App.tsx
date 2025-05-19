@@ -18,6 +18,7 @@ import Signup from "./pages/auth/Signup";
 import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import NotFound from "./pages/NotFound";
+import TeamOverview from "./pages/TeamOverview";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,19 @@ const App = () => {
                     <ProtectedRoute>
                       <>
                         <NavBar />
+                        <TeamOverview />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Team Lead Dashboard Route */}
+                <Route 
+                  path="/team-lead-dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <>
+                        <NavBar />
                         <TeamLeadDashboard />
                       </>
                     </ProtectedRoute>
@@ -67,9 +81,6 @@ const App = () => {
                     </ProtectedRoute>
                   } 
                 />
-                
-                {/* Redirect /team-lead-dashboard to root */}
-                <Route path="/team-lead-dashboard" element={<Navigate to="/" replace />} />
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />

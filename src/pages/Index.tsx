@@ -1,8 +1,8 @@
 
-import TeamLeadDashboard from './team-lead-dashboard/TeamLeadDashboard';
+import TeamOverview from './TeamOverview';
 
 const Index = () => {
-  return <TeamLeadDashboard />;
+  return <TeamOverview />;
 };
 
 export default Index;
