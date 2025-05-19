@@ -9,6 +9,8 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { DateProvider } from "./context/DateContext";
 import { NavBar } from "./components/NavBar";
+import { useEffect } from "react";
+import { enableRealtimeForTables } from "./integrations/supabase/enableRealtime";
 
 // Pages
 import Login from "./pages/auth/Login";
@@ -19,58 +21,65 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <DateProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Auth Routes */}
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-              </Route>
-              
-              {/* Protected Routes */}
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <>
-                      <NavBar />
-                      <TeamLeadDashboard />
-                    </>
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Admin Routes */}
-              <Route 
-                path="/admin/users" 
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <>
-                      <NavBar />
-                      <UserManagement />
-                    </>
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Redirect /team-lead-dashboard to root */}
-              <Route path="/team-lead-dashboard" element={<Navigate to="/" replace />} />
-              
-              {/* Catch-all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </DateProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Enable realtime when the app initializes
+  useEffect(() => {
+    enableRealtimeForTables();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <DateProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Auth Routes */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                </Route>
+                
+                {/* Protected Routes */}
+                <Route 
+                  path="/" 
+                  element={
+                    <ProtectedRoute>
+                      <>
+                        <NavBar />
+                        <TeamLeadDashboard />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Admin Routes */}
+                <Route 
+                  path="/admin/users" 
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <>
+                        <NavBar />
+                        <UserManagement />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Redirect /team-lead-dashboard to root */}
+                <Route path="/team-lead-dashboard" element={<Navigate to="/" replace />} />
+                
+                {/* Catch-all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </DateProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

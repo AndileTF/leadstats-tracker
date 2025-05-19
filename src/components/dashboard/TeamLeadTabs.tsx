@@ -46,6 +46,7 @@ export const TeamLeadTabs = ({
     if (!selectedTab) return;
     
     fetchAgents(selectedTab);
+    console.log("Setting up realtime subscription for team lead:", selectedTab);
     
     // Set up multiple realtime subscriptions
     const agentsChannel = supabase
@@ -87,6 +88,7 @@ export const TeamLeadTabs = ({
       .subscribe();
 
     return () => {
+      console.log("Cleaning up realtime subscriptions");
       supabase.removeChannel(agentsChannel);
       supabase.removeChannel(teamLeadsChannel);
     };
@@ -94,6 +96,7 @@ export const TeamLeadTabs = ({
 
   const fetchAgents = async (teamLeadId: string) => {
     try {
+      console.log("Fetching agents for team lead:", teamLeadId);
       setIsLoadingAgents(true);
       const { data, error } = await supabase
         .from('agents')
@@ -101,7 +104,12 @@ export const TeamLeadTabs = ({
         .eq('team_lead_id', teamLeadId)
         .order('start_date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching agents:', error);
+        throw error;
+      }
+      
+      console.log("Agents fetched:", data?.length || 0, data);
       setAgents(data || []);
     } catch (error) {
       console.error('Error fetching agents:', error);
