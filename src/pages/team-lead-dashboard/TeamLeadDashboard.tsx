@@ -7,6 +7,7 @@ import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { format } from 'date-fns';
+import { useAuth } from '@/context/AuthContext';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -15,6 +16,7 @@ const TeamLeadDashboard = () => {
   const [stats, setStats] = useState<DailyStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange } = useDateRange();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchTeamLeads();
@@ -214,8 +216,8 @@ const TeamLeadDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen animate-fade-in">
+      <div className="max-w-7xl mx-auto space-y-8 p-6">
         <DashboardHeader 
           showForm={showForm}
           setShowForm={setShowForm}
