@@ -56,7 +56,7 @@ const TeamLeadDashboard = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'daily_stats',
+          table: 'Emails',
           filter: `team_lead_id=eq.${selectedTeamLead}`
         },
         (payload) => {
