@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
+import { UserPlus } from "lucide-react";
 
 /**
  * Header component for the team overview page
@@ -26,13 +27,23 @@ export const TeamOverviewHeader = () => {
           <p className="text-muted-foreground mt-2">Track and analyze your team's performance metrics</p>
         </div>
       </div>
-      <Button 
-        variant="default"
-        onClick={() => navigate('/team-lead-dashboard')}
-        className="bg-[#cf1e90] hover:bg-[#e24bab]"
-      >
-        TL Portal
-      </Button>
+      <div className="flex gap-3">
+        <Button 
+          variant="default"
+          onClick={() => navigate('/team-lead-dashboard')}
+          className="bg-[#cf1e90] hover:bg-[#e24bab]"
+        >
+          TL Portal
+        </Button>
+        <Button
+          variant="default"
+          onClick={() => navigate('/admin/users')}
+          className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add User
+        </Button>
+      </div>
     </div>
   );
 };
