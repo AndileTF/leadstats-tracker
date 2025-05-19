@@ -3,14 +3,35 @@ import { supabase } from "./client";
 
 export const enableRealtimeForTables = async () => {
   try {
-    // Enable realtime for the agents table
-    await supabase.rpc('enable_realtime', { table_name: 'agents' });
-    
-    // Enable realtime for the team_leads table
-    await supabase.rpc('enable_realtime', { table_name: 'team_leads' });
-    
-    // Enable realtime for the daily_stats table
-    await supabase.rpc('enable_realtime', { table_name: 'daily_stats' });
+    // Set up channel subscriptions for the tables we need
+    const channel = supabase.channel('db-changes')
+      // Listen for changes to agents table
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'agents'
+      }, payload => {
+        console.log('Agent change received:', payload);
+      })
+      // Listen for changes to team_leads table
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'team_leads'
+      }, payload => {
+        console.log('Team lead change received:', payload);
+      })
+      // Listen for changes to daily_stats table
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'daily_stats'
+      }, payload => {
+        console.log('Daily stats change received:', payload);
+      });
+
+    // Subscribe to the channel
+    await channel.subscribe();
     
     console.log("Realtime functionality enabled for required tables");
     return true;
