@@ -22,7 +22,7 @@ export const TeamOverviewHeader = () => {
         </div>
         <div>
           <h1 className="text-3xl font-bold liquid-text">
-            Team Lead Dashboard
+            CX Lead Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">Track and analyze your team's performance metrics</p>
         </div>
