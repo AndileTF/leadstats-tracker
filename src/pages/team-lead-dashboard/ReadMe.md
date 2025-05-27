@@ -9,7 +9,7 @@ A modern dashboard for tracking and analyzing customer support team performance,
 
 - **Team Overview**: Visualize team lead and agent performance with charts, tables, and heatmaps.
 - **Real-time Updates**: Live data sync using Supabase channels for instant dashboard refresh.
-- **Role-based Access**: Admin, Team Lead (Editor), and Agent (Viewer) roles with protected routes.
+- **Role-based Access**: Admin and Agent (Viewer) roles with protected routes.
 - **User Management**: Admins can add, edit, and manage users and their roles.
 - **Data Import/Export**: Import/export team stats via Excel files.
 - **Customizable Date Range**: Filter stats and charts by date.
