@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Database, Bug, LogIn } from "lucide-react";
+import { Database, Bug, Log } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -212,7 +213,7 @@ const DebugDashboard = () => {
             Database Explorer
           </TabsTrigger>
           <TabsTrigger value="logs" className="flex items-center gap-1">
-            <LogIn className="h-4 w-4" />
+            <Log className="h-4 w-4" />
             Auth Logs
           </TabsTrigger>
         </TabsList>

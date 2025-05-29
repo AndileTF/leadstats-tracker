@@ -342,12 +342,12 @@ const TeamOverview = () => {
                   <PieChart 
                     data={overview} 
                     metric="total_qa_assessments" 
-                    title="Distribution of QA Assessments by Team Leads" 
+                    title="Distribution of QA Assessments" 
                   />
                   <PieChart 
                     data={overview} 
                     metric="total_emails" 
-                    title="Distribution of Emails by Team Leads" 
+                    title="Distribution of Emails" 
                   />
                 </div>
                 
