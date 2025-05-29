@@ -7,14 +7,9 @@ import { useUser } from "@/hooks/useUser";
 type ProtectedRouteProps = {
   children: ReactNode;
   adminOnly?: boolean;
-  editorOrAdmin?: boolean;
 };
 
-export const ProtectedRoute = ({ 
-  children, 
-  adminOnly = false,
-  editorOrAdmin = false
-}: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
   const { user, loading, forcePasswordChange } = useAuth();
   const { profile, loading: profileLoading, isAdmin } = useUser();
   const location = useLocation();
@@ -26,13 +21,11 @@ export const ProtectedRoute = ({
       user: user?.email, 
       loading, 
       adminOnly, 
-      editorOrAdmin,
       path: location.pathname,
       forcePasswordChange,
-      isAdmin,
-      role: profile?.role
+      isAdmin
     });
-  }, [user, loading, adminOnly, editorOrAdmin, location, forcePasswordChange, isAdmin, profile]);
+  }, [user, loading, adminOnly, location, forcePasswordChange, isAdmin]);
 
   if (loading || profileLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -50,11 +43,6 @@ export const ProtectedRoute = ({
 
   // Check for admin access if required
   if (adminOnly && !isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-  
-  // Check for editor or admin access if required (editors and admins can edit content)
-  if (editorOrAdmin && profile?.role !== 'editor' && profile?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 
