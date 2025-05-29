@@ -9,6 +9,7 @@ type UserProfile = {
   email: string;
   full_name: string | null;
   role: string;
+  password_changed: boolean | null;
 };
 
 export const useUser = () => {
@@ -32,12 +33,22 @@ export const useUser = () => {
         
         if (error) throw error;
         
+        // Get additional profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
         // Create profile object with data we have
         setProfile({
           id: user.id,
           email: user.email || '',
-          full_name: user.user_metadata?.full_name || null,
-          role: data || 'editor' // Default to editor if no role found
+          full_name: profileData?.full_name || user.user_metadata?.full_name || null,
+          role: data || 'editor', // Default to editor if no role found
+          password_changed: profileData?.password_changed
         });
       } catch (error: any) {
         console.error("Error loading user data:", error);
@@ -54,5 +65,11 @@ export const useUser = () => {
     fetchProfile();
   }, [user]);
 
-  return { profile, loading, isAdmin: profile?.role === 'admin' };
+  return { 
+    profile, 
+    loading, 
+    isAdmin: profile?.role === 'admin',
+    isEditor: profile?.role === 'editor',
+    isViewer: profile?.role === 'viewer'
+  };
 };

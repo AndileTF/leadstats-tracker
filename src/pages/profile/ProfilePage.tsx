@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUser } from "@/hooks/useUser";
@@ -9,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Key } from "lucide-react";
+import { Shield, Key, User as UserIcon, Save } from "lucide-react";
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -19,6 +20,9 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [isSavingName, setIsSavingName] = useState(false);
 
   // Check if user has changed their initial password
   useEffect(() => {
@@ -42,6 +46,13 @@ const ProfilePage = () => {
     
     checkPasswordChanged();
   }, [user]);
+
+  // Initialize fullName from profile
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+    }
+  }, [profile]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +102,37 @@ const ProfilePage = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateName = async () => {
+    if (!user || !fullName.trim()) return;
+    
+    try {
+      setIsSavingName(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName.trim() })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Profile updated",
+        description: "Your name has been successfully updated.",
+      });
+      
+      setIsEditingName(false);
+    } catch (error: any) {
+      console.error("Error updating name:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to update profile",
+        description: error.message || "An error occurred while updating your profile.",
+      });
+    } finally {
+      setIsSavingName(false);
     }
   };
 
@@ -165,10 +207,51 @@ const ProfilePage = () => {
               <AvatarImage src={`https://ui-avatars.com/api/?name=${profile?.full_name || "User"}&background=random`} />
               <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
             </Avatar>
-            <div>
-              <h3 className="font-medium text-lg">{profile?.full_name || "User"}</h3>
-              <p className="text-sm text-muted-foreground">{profile?.email}</p>
-            </div>
+            
+            {isEditingName ? (
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                  />
+                  <Button 
+                    onClick={handleUpdateName}
+                    size="icon"
+                    disabled={isSavingName}
+                  >
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setFullName(profile?.full_name || "");
+                    }}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-medium text-lg">{profile?.full_name || "Not set"}</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">{profile?.email}</p>
+              </div>
+            )}
           </div>
           
           {!passwordChanged && (
