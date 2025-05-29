@@ -17,7 +17,6 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
 import UserManagement from "./pages/admin/UserManagement";
-import DebugDashboard from "./pages/admin/DebugDashboard";
 import NotFound from "./pages/NotFound";
 import TeamOverview from "./pages/TeamOverview";
 import ProfilePage from "./pages/profile/ProfilePage";
@@ -71,11 +70,11 @@ const App = () => {
                   } 
                 />
                 
-                {/* Team Lead Dashboard Route - Accessible by editors and admins */}
+                {/* Team Lead Dashboard Route */}
                 <Route 
                   path="/team-lead-dashboard" 
                   element={
-                    <ProtectedRoute editorOrAdmin={true}>
+                    <ProtectedRoute>
                       <>
                         <NavBar />
                         <TeamLeadDashboard />
@@ -92,18 +91,6 @@ const App = () => {
                       <>
                         <NavBar />
                         <UserManagement />
-                      </>
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/admin/debug" 
-                  element={
-                    <ProtectedRoute adminOnly={true}>
-                      <>
-                        <NavBar />
-                        <DebugDashboard />
                       </>
                     </ProtectedRoute>
                   } 
