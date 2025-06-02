@@ -49,16 +49,17 @@ const DebugDashboard = () => {
   ];
 
   useEffect(() => {
-    // Check connection status
+    // Check connection status by testing a simple query
     const checkConnection = async () => {
       try {
         const startTime = performance.now();
-        const { data, error } = await supabase.from('profiles').select('count(*)', { count: 'exact', head: true });
+        const { error } = await supabase.from('team_leads').select('count', { count: 'exact', head: true });
         const endTime = performance.now();
         
         if (error) {
           setConnectionStatus("Disconnected");
-          throw error;
+          console.error("Connection check error:", error);
+          return;
         }
         
         setConnectionStatus(`Connected (${Math.round(endTime - startTime)}ms)`);
@@ -68,7 +69,6 @@ const DebugDashboard = () => {
       }
     };
 
-    // Set available tables instead of trying to fetch them
     const fetchTables = async () => {
       try {
         setIsLoadingTables(true);
@@ -88,7 +88,6 @@ const DebugDashboard = () => {
       }
     };
 
-    // For now, we'll skip auth logs since the function doesn't exist
     const fetchAuthLogs = async () => {
       try {
         setIsLoadingLogs(true);
@@ -117,7 +116,6 @@ const DebugDashboard = () => {
     try {
       setIsLoadingData(true);
       
-      // Type assertion to handle the table name properly
       const { data, error } = await supabase
         .from(tableName as any)
         .select('*')

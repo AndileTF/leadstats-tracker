@@ -1,9 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLeadOverview, DailyStats, TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
 import { DateFilter } from "@/components/dashboard/DateFilter";
@@ -17,6 +17,7 @@ import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
 import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
+import { aggregateDataFromAllTables } from "@/utils/dataAggregation";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
@@ -27,109 +28,58 @@ const TeamOverview = () => {
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   
   useEffect(() => {
-    const dailyStatsChannel = supabase
-      .channel('overview-daily-stats-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'daily_stats'
-        },
-        (payload) => {
-          console.log('Real-time update received for daily_stats:', payload);
-          const changeDate = (payload.new as any).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-            fetchOverview();
-            fetchDailyStats();
-            toast({
-              title: "Data Updated",
-              description: "Dashboard data has been refreshed"
-            });
+    // Set up real-time subscriptions for all tables
+    const tablesChannels = [
+      'daily_stats',
+      'Calls', 
+      'Emails',
+      'Live Chat',
+      'Escalations',
+      'QA Table',
+      'After Call Survey Tickets',
+      'team_leads',
+      'agents'
+    ].map(tableName => {
+      return supabase
+        .channel(`overview-${tableName}-changes`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: tableName
+          },
+          (payload) => {
+            console.log(`Real-time update received for ${tableName}:`, payload);
+            const changeDate = (payload.new as any)?.date || (payload.new as any)?.Date;
+            if (!changeDate || (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate)) {
+              fetchTeamLeads();
+              fetchOverview();
+              fetchDailyStats();
+              toast({
+                title: "Data Updated",
+                description: `${tableName} data has been refreshed`
+              });
+            }
           }
-        }
-      )
-      .subscribe();
-      
-    const surveyTicketsChannel = supabase
-      .channel('overview-survey-tickets-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'After Call Survey Tickets'
-        },
-        (payload) => {
-          console.log('Real-time update received for survey tickets:', payload);
-          const changeDate = (payload.new as any).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-            fetchOverview();
-            fetchDailyStats();
-            toast({
-              title: "Survey Data Updated",
-              description: "Survey data has been refreshed"
-            });
-          }
-        }
-      )
-      .subscribe();
-      
-    const teamLeadsChannel = supabase
-      .channel('overview-team-leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'team_leads'
-        },
-        (payload) => {
-          console.log('Real-time update received for team_leads:', payload);
-          fetchTeamLeads();
-          fetchOverview();
-          toast({
-            title: "Team Leads Updated",
-            description: "Team leads data has been refreshed"
-          });
-        }
-      )
-      .subscribe();
-      
-    const agentsChannel = supabase
-      .channel('overview-agents-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'agents'
-        },
-        (payload) => {
-          console.log('Real-time update received for agents:', payload);
-          fetchTeamLeads();
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    });
       
     fetchTeamLeads();
     fetchOverview();
     fetchDailyStats();
     
     return () => {
-      supabase.removeChannel(dailyStatsChannel);
-      supabase.removeChannel(surveyTicketsChannel);
-      supabase.removeChannel(teamLeadsChannel);
-      supabase.removeChannel(agentsChannel);
+      tablesChannels.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
     };
   }, [dateRange]);
 
   const fetchTeamLeads = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('team_leads').select('*');
+      const { data, error } = await supabase.from('team_leads').select('*');
       if (error) throw error;
       setTeamLeads(data);
       if (data.length > 0 && !selectedTeamLead) {
@@ -148,66 +98,37 @@ const TeamOverview = () => {
   const fetchOverview = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching overview with date range:', dateRange);
+      console.log('Fetching overview with aggregated data from all tables:', dateRange);
       
-      // Clear the previous overview data when fetching new data
       setOverview([]);
       
-      const {
-        data: dailyStats,
-        error: dailyStatsError
-      } = await supabase.from('daily_stats').select(`
-          team_leads (
-            id,
-            name
-          ),
-          calls,
-          emails,
-          live_chat,
-          escalations,
-          qa_assessments,
-          date,
-          team_lead_id,
-          sla_percentage
-        `)
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate);
+      // Get all team leads
+      const { data: teamLeadsData, error: teamLeadsError } = await supabase
+        .from('team_leads')
+        .select('*');
         
-      if (dailyStatsError) throw dailyStatsError;
+      if (teamLeadsError) throw teamLeadsError;
       
-      const {
-        data: surveyTickets,
-        error: surveyError
-      } = await supabase.from('After Call Survey Tickets')
-        .select('*')
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate);
-        
-      if (surveyError) throw surveyError;
-      
-      console.log('Fetched daily stats for date range:', dateRange, dailyStats);
-      console.log('Fetched survey tickets for date range:', dateRange, surveyTickets);
-      
-      const surveyTicketMap = surveyTickets.reduce((acc: {
-        [key: string]: number;
-      }, curr) => {
-        acc[curr.team_lead_id] = (acc[curr.team_lead_id] || 0) + (curr.ticket_count || 0);
-        return acc;
-      }, {});
-      
-      const overviewMap: { [key: string]: any } = {};
-      
-      // Process daily stats into the overview
-      dailyStats.forEach(curr => {
-        const name = curr.team_leads?.name;
-        const teamLeadId = curr.team_lead_id;
-        
-        if (!name || !teamLeadId) return;
-        
-        if (!overviewMap[teamLeadId]) {
-          overviewMap[teamLeadId] = {
-            name,
-            team_lead_id: teamLeadId,
+      // Aggregate data for each team lead
+      const overviewPromises = teamLeadsData.map(async (teamLead) => {
+        try {
+          const aggregatedStats = await aggregateDataFromAllTables(
+            dateRange.startDate,
+            dateRange.endDate,
+            teamLead.id
+          );
+          
+          // Calculate totals and averages
+          const totals = aggregatedStats.reduce((acc, stat) => ({
+            total_calls: acc.total_calls + (stat.calls || 0),
+            total_emails: acc.total_emails + (stat.emails || 0),
+            total_live_chat: acc.total_live_chat + (stat.live_chat || 0),
+            total_escalations: acc.total_escalations + (stat.escalations || 0),
+            total_qa_assessments: acc.total_qa_assessments + (stat.qa_assessments || 0),
+            total_survey_tickets: acc.total_survey_tickets + (stat.survey_tickets || 0),
+            total_days: acc.total_days + 1,
+            average_sla: acc.average_sla + (stat.sla_percentage || 0)
+          }), {
             total_calls: 0,
             total_emails: 0,
             total_live_chat: 0,
@@ -215,49 +136,41 @@ const TeamOverview = () => {
             total_qa_assessments: 0,
             total_survey_tickets: 0,
             total_days: 0,
-            average_sla: 0,
-            sla_days: 0
+            average_sla: 0
+          });
+          
+          return {
+            name: teamLead.name,
+            team_lead_id: teamLead.id,
+            ...totals,
+            average_sla: totals.total_days > 0 ? totals.average_sla / totals.total_days : 0
+          };
+        } catch (error) {
+          console.error(`Error aggregating data for team lead ${teamLead.name}:`, error);
+          return {
+            name: teamLead.name,
+            team_lead_id: teamLead.id,
+            total_calls: 0,
+            total_emails: 0,
+            total_live_chat: 0,
+            total_escalations: 0,
+            total_qa_assessments: 0,
+            total_survey_tickets: 0,
+            total_days: 0,
+            average_sla: 0
           };
         }
-        
-        overviewMap[teamLeadId].total_calls += curr.calls || 0;
-        overviewMap[teamLeadId].total_emails += curr.emails || 0;
-        overviewMap[teamLeadId].total_live_chat += curr.live_chat || 0;
-        overviewMap[teamLeadId].total_escalations += curr.escalations || 0;
-        overviewMap[teamLeadId].total_qa_assessments += curr.qa_assessments || 0;
-        
-        if (curr.sla_percentage) {
-          overviewMap[teamLeadId].average_sla += curr.sla_percentage;
-          overviewMap[teamLeadId].sla_days += 1;
-        }
-        
-        overviewMap[teamLeadId].total_days += 1;
       });
       
-      // Add survey tickets data
-      Object.entries(surveyTicketMap).forEach(([teamLeadId, count]) => {
-        if (overviewMap[teamLeadId]) {
-          overviewMap[teamLeadId].total_survey_tickets = count;
-        }
-      });
-      
-      // Calculate averages
-      Object.values(overviewMap).forEach((item: any) => {
-        if (item.sla_days > 0) {
-          item.average_sla = item.average_sla / item.sla_days;
-        }
-      });
-      
-      // Convert map to array
-      const overviewArray = Object.values(overviewMap);
-      console.log('Processed overview data:', overviewArray);
+      const overviewArray = await Promise.all(overviewPromises);
+      console.log('Processed overview data from all tables:', overviewArray);
       
       setOverview(overviewArray);
     } catch (error) {
       console.error('Error fetching overview:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch overview",
+        description: "Failed to fetch overview data from all tables",
         variant: "destructive"
       });
     } finally {
@@ -267,23 +180,18 @@ const TeamOverview = () => {
 
   const fetchDailyStats = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('daily_stats').select('*')
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate)
-        .order('date', {
-          ascending: true
-        });
-        
-      if (error) throw error;
-      setDailyStats(data);
+      // Get aggregated data from all tables for all team leads
+      const aggregatedStats = await aggregateDataFromAllTables(
+        dateRange.startDate,
+        dateRange.endDate
+      );
+      
+      setDailyStats(aggregatedStats);
     } catch (error) {
       console.error('Error fetching daily stats:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch daily statistics",
+        description: "Failed to fetch daily statistics from all tables",
         variant: "destructive"
       });
     }

@@ -6,8 +6,8 @@ import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
-import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
+import { aggregateDataFromAllTables } from '@/utils/dataAggregation';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -51,60 +51,48 @@ const TeamLeadDashboard = () => {
     if (!selectedTeamLead) return;
 
     // Set up multiple channels for different tables
-    const dailyStatsChannel = supabase
-      .channel('dashboard-daily-stats-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'daily_stats',
-          filter: `team_lead_id=eq.${selectedTeamLead}`
-        },
-        (payload) => {
-          console.log('Daily stats update received:', payload);
-          const changeDate = (payload.new as DailyStats).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-            fetchStats();
-            toast({
-              title: "Data Updated",
-              description: "Dashboard data has been refreshed",
-            });
+    const tablesChannels = [
+      'daily_stats',
+      'Calls',
+      'Emails',
+      'Live Chat',
+      'Escalations', 
+      'QA Table',
+      'After Call Survey Tickets'
+    ].map(tableName => {
+      return supabase
+        .channel(`dashboard-${tableName}-changes`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: tableName,
+            filter: tableName === 'After Call Survey Tickets' ? 
+              `team_lead_id=eq.${selectedTeamLead}` : 
+              `team_lead_id=eq.${selectedTeamLead}`
+          },
+          (payload) => {
+            console.log(`${tableName} update received:`, payload);
+            const changeDate = (payload.new as any).date || (payload.new as any).Date;
+            if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
+              fetchStats();
+              toast({
+                title: "Data Updated",
+                description: `${tableName} data has been refreshed`,
+              });
+            }
           }
-        }
-      )
-      .subscribe();
-      
-    // Set up subscription for survey tickets table
-    const surveyTicketsChannel = supabase
-      .channel('dashboard-survey-tickets-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'After Call Survey Tickets',
-          filter: `team_lead_id=eq.${selectedTeamLead}`
-        },
-        (payload) => {
-          console.log('Survey tickets update received:', payload);
-          const changeDate = (payload.new as any).date;
-          if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-            fetchStats();
-            toast({
-              title: "Survey Data Updated",
-              description: "Survey tickets data has been refreshed",
-            });
-          }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    });
 
     fetchStats();
 
     return () => {
-      supabase.removeChannel(dailyStatsChannel);
-      supabase.removeChannel(surveyTicketsChannel);
+      tablesChannels.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
     };
   }, [selectedTeamLead, dateRange]);
 
@@ -135,75 +123,23 @@ const TeamLeadDashboard = () => {
     if (!selectedTeamLead) return;
 
     try {
-      console.log('Fetching stats with date range:', dateRange);
+      console.log('Fetching aggregated stats from all tables with date range:', dateRange);
       setIsLoading(true);
       
-      // First, get all unique dates in the range
-      const startDate = new Date(dateRange.startDate);
-      const endDate = new Date(dateRange.endDate);
-      const dateArray = [];
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        dateArray.push(format(date, 'yyyy-MM-dd'));
-      }
+      // Use the new aggregation function to get data from all tables
+      const aggregatedStats = await aggregateDataFromAllTables(
+        dateRange.startDate,
+        dateRange.endDate,
+        selectedTeamLead
+      );
 
-      // Fetch daily stats
-      const { data: dailyStats, error: dailyStatsError } = await supabase
-        .from('daily_stats')
-        .select('*')
-        .eq('team_lead_id', selectedTeamLead)
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate)
-        .order('date', { ascending: false });
-
-      if (dailyStatsError) throw dailyStatsError;
-      console.log('Daily stats:', dailyStats);
-
-      // Fetch survey tickets
-      const { data: surveyTickets, error: surveyError } = await supabase
-        .from('After Call Survey Tickets')
-        .select('*')
-        .eq('team_lead_id', selectedTeamLead)
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate);
-
-      if (surveyError) throw surveyError;
-      console.log('Survey tickets:', surveyTickets);
-
-      // Create a map of dates to survey ticket counts
-      const surveyTicketMap = surveyTickets?.reduce((acc: { [key: string]: number }, ticket) => {
-        acc[ticket.date] = (acc[ticket.date] || 0) + (ticket.ticket_count || 0);
-        return acc;
-      }, {});
-
-      // Create or update stats for each date
-      const combinedStats = dateArray.map(date => {
-        const existingStat = dailyStats?.find(stat => stat.date === date) || {
-          id: `temp-${date}`,
-          team_lead_id: selectedTeamLead,
-          date: date,
-          calls: 0,
-          emails: 0,
-          live_chat: 0,
-          escalations: 0,
-          qa_assessments: 0,
-          survey_tickets: 0,
-          created_at: new Date().toISOString(),
-          sla_percentage: 0
-        };
-
-        return {
-          ...existingStat,
-          survey_tickets: surveyTicketMap?.[date] || 0
-        };
-      });
-
-      console.log('Combined stats:', combinedStats);
-      setStats(combinedStats);
+      console.log('Aggregated stats:', aggregatedStats);
+      setStats(aggregatedStats);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error('Error fetching aggregated stats:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch stats",
+        description: "Failed to fetch stats from all tables",
         variant: "destructive",
       });
     } finally {
