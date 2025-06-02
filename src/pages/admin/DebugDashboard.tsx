@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Database, Bug, LogIn } from "lucide-react";
+import { Database, Bug, Logs } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,6 +34,20 @@ const DebugDashboard = () => {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("Checking...");
 
+  // Define the available tables from the Supabase types
+  const availableTables = [
+    "profiles",
+    "team_leads", 
+    "agents",
+    "daily_stats",
+    "Calls",
+    "Emails",
+    "Escalations",
+    "Live Chat",
+    "QA Table",
+    "After Call Survey Tickets"
+  ];
+
   useEffect(() => {
     // Check connection status
     const checkConnection = async () => {
@@ -53,53 +68,34 @@ const DebugDashboard = () => {
       }
     };
 
-    // Fetch table list
+    // Set available tables instead of trying to fetch them
     const fetchTables = async () => {
       try {
         setIsLoadingTables(true);
-        
-        const { data, error } = await supabase
-          .rpc('get_tables_list') // This function needs to be created in the database
-          .select();
-        
-        if (error) throw error;
-        
-        if (data) {
-          const tableNames = data.map((t: any) => t.table_name);
-          setTables(tableNames);
-          if (tableNames.length > 0) {
-            setSelectedTable(tableNames[0]);
-          }
+        setTables(availableTables);
+        if (availableTables.length > 0) {
+          setSelectedTable(availableTables[0]);
         }
       } catch (error: any) {
-        console.error("Error fetching tables:", error);
+        console.error("Error setting tables:", error);
         toast({
           variant: "destructive",
-          title: "Error fetching tables",
-          description: error.message || "Could not fetch database tables",
+          title: "Error loading tables",
+          description: error.message || "Could not load database tables",
         });
       } finally {
         setIsLoadingTables(false);
       }
     };
 
-    // Fetch auth logs
+    // For now, we'll skip auth logs since the function doesn't exist
     const fetchAuthLogs = async () => {
       try {
         setIsLoadingLogs(true);
-        
-        const { data, error } = await supabase
-          .rpc('get_auth_logs') // This function needs to be created in the database
-          .select();
-        
-        if (error) throw error;
-        
-        if (data) {
-          setAuthLogs(data);
-        }
+        // Placeholder for auth logs - function doesn't exist yet
+        setAuthLogs([]);
       } catch (error: any) {
         console.error("Error fetching auth logs:", error);
-        // Fallback to empty array if function doesn't exist
         setAuthLogs([]);
       } finally {
         setIsLoadingLogs(false);
@@ -121,8 +117,9 @@ const DebugDashboard = () => {
     try {
       setIsLoadingData(true);
       
+      // Type assertion to handle the table name properly
       const { data, error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .select('*')
         .limit(100);
       
@@ -135,18 +132,7 @@ const DebugDashboard = () => {
         if (data.length > 0) {
           setColumns(Object.keys(data[0]));
         } else {
-          // If no data, try to get columns from the table schema
-          const { data: schemaData, error: schemaError } = await supabase
-            .rpc('get_table_columns', { table_name: tableName }) // This function needs to be created in the database
-            .select();
-          
-          if (schemaError) throw schemaError;
-          
-          if (schemaData) {
-            setColumns(schemaData.map((col: any) => col.column_name));
-          } else {
-            setColumns([]);
-          }
+          setColumns([]);
         }
       }
     } catch (error: any) {
@@ -212,7 +198,7 @@ const DebugDashboard = () => {
             Database Explorer
           </TabsTrigger>
           <TabsTrigger value="logs" className="flex items-center gap-1">
-            <LogIn className="h-4 w-4" />
+            <Logs className="h-4 w-4" />
             Auth Logs
           </TabsTrigger>
         </TabsList>
@@ -291,7 +277,7 @@ const DebugDashboard = () => {
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground">No authentication logs available</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Note: The auth logs function may need to be created in your Supabase database
+                    Note: Auth logs functionality will be implemented later
                   </p>
                 </div>
               ) : (

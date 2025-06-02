@@ -39,13 +39,6 @@ export type Database = {
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "After Call Survey Tickets_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
-          },
         ]
       }
       agents: {
@@ -81,32 +74,31 @@ export type Database = {
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "agents_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
-          },
         ]
       }
       Calls: {
         Row: {
           call_count: number | null
           Date: string
+          "end time": string | null
           Name: string
+          "start time": string | null
           team_lead_id: string | null
         }
         Insert: {
           call_count?: number | null
           Date: string
+          "end time"?: string | null
           Name: string
+          "start time"?: string | null
           team_lead_id?: string | null
         }
         Update: {
           call_count?: number | null
           Date?: string
+          "end time"?: string | null
           Name?: string
+          "start time"?: string | null
           team_lead_id?: string | null
         }
         Relationships: [
@@ -116,13 +108,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "Calls_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
           },
         ]
       }
@@ -174,32 +159,31 @@ export type Database = {
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "daily_stats_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
-          },
         ]
       }
       Emails: {
         Row: {
           Date: string
           email_count: number | null
+          "end time": string | null
           Name: string
+          "start time": string | null
           team_lead_id: string | null
         }
         Insert: {
           Date: string
           email_count?: number | null
+          "end time"?: string | null
           Name: string
+          "start time"?: string | null
           team_lead_id?: string | null
         }
         Update: {
           Date?: string
           email_count?: number | null
+          "end time"?: string | null
           Name?: string
+          "start time"?: string | null
           team_lead_id?: string | null
         }
         Relationships: [
@@ -209,33 +193,32 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "Emails_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
           },
         ]
       }
       Escalations: {
         Row: {
           Date: string
+          "End time": string | null
           escalation_count: number | null
           Name: string
+          "Start time": string | null
           team_lead_id: string | null
         }
         Insert: {
           Date: string
+          "End time"?: string | null
           escalation_count?: number | null
           Name: string
+          "Start time"?: string | null
           team_lead_id?: string | null
         }
         Update: {
           Date?: string
+          "End time"?: string | null
           escalation_count?: number | null
           Name?: string
+          "Start time"?: string | null
           team_lead_id?: string | null
         }
         Relationships: [
@@ -245,13 +228,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "Escalations_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
           },
         ]
       }
@@ -281,13 +257,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "Live Chat_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
           },
         ]
       }
@@ -329,34 +298,33 @@ export type Database = {
           assessment_count: number | null
           Assessor: string
           Date: string
+          "end time": string | null
+          "start time": string | null
           team_lead_id: string | null
         }
         Insert: {
           assessment_count?: number | null
           Assessor: string
           Date: string
+          "end time"?: string | null
+          "start time"?: string | null
           team_lead_id?: string | null
         }
         Update: {
           assessment_count?: number | null
           Assessor?: string
           Date?: string
+          "end time"?: string | null
+          "start time"?: string | null
           team_lead_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "QA Table_team_lead_id_fkey"
+            foreignKeyName: "QA Table_duplicate_team_lead_id_fkey"
             columns: ["team_lead_id"]
             isOneToOne: false
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "QA Table_team_lead_id_fkey"
-            columns: ["team_lead_id"]
-            isOneToOne: false
-            referencedRelation: "team_metrics"
-            referencedColumns: ["team_lead_id"]
           },
         ]
       }
@@ -398,24 +366,17 @@ export type Database = {
         }
         Relationships: []
       }
-      team_metrics: {
-        Row: {
-          team_lead_id: string | null
-          team_lead_name: string | null
-          total_calls: number | null
-          total_chats: number | null
-          total_emails: number | null
-          total_escalations: number | null
-          total_qa_assessments: number | null
-          total_survey_tickets: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       get_profile_role: {
         Args: { user_id: string }
         Returns: string
+      }
+      get_tables_list: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+        }[]
       }
       get_weekly_stats: {
         Args: { start_date: string }

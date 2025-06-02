@@ -1,56 +1,31 @@
-
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useUser } from "@/hooks/useUser";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Shield, Key, User as UserIcon, Save } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useUser } from '@/hooks/useUser';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Eye, EyeOff, Edit } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
-  const { profile, loading } = useUser();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [passwordChanged, setPasswordChanged] = useState(false);
+  const { user, forcePasswordChange } = useAuth();
+  const { profile, loading: profileLoading } = useUser();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [isSavingName, setIsSavingName] = useState(false);
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
 
-  // Check if user has changed their initial password
   useEffect(() => {
-    const checkPasswordChanged = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('password_changed')
-          .eq('id', user.id)
-          .single();
-        
-        if (error) throw error;
-        
-        setPasswordChanged(!!data?.password_changed);
-      } catch (error) {
-        console.error("Error checking password status:", error);
-      }
-    };
-    
-    checkPasswordChanged();
-  }, [user]);
-
-  // Initialize fullName from profile
-  useEffect(() => {
-    if (profile?.full_name) {
-      setFullName(profile.full_name);
+    if (profile) {
+      setFullName(profile.full_name || '');
     }
   }, [profile]);
 
@@ -60,261 +35,243 @@ const ProfilePage = () => {
     if (newPassword !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Passwords do not match",
-        description: "Please make sure your new password and confirmation match.",
+        title: "Password mismatch",
+        description: "New password and confirmation don't match.",
       });
       return;
     }
-    
-    try {
-      setIsSubmitting(true);
-      
-      // Update password in Supabase Auth
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+
+    if (newPassword.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
       });
-      
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
       if (error) throw error;
-      
-      // Mark password as changed in profiles table
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ password_changed: true })
-        .eq('id', user?.id);
-      
-      if (updateError) throw updateError;
-      
-      setPasswordChanged(true);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      
+
+      // Update the password_changed flag in the profile
+      if (user?.id) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ password_changed: true })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+      }
+
       toast({
         title: "Password updated",
         description: "Your password has been successfully changed.",
       });
+
+      // Clear form
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
     } catch (error: any) {
-      console.error("Error updating password:", error);
+      console.error('Error changing password:', error);
       toast({
         variant: "destructive",
-        title: "Failed to update password",
-        description: error.message || "An error occurred while updating your password.",
+        title: "Password change failed",
+        description: error.message || "An error occurred while changing your password.",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsChangingPassword(false);
     }
   };
 
-  const handleUpdateName = async () => {
-    if (!user || !fullName.trim()) return;
-    
+  const handleNameUpdate = async () => {
+    if (!user?.id) return;
+
     try {
-      setIsSavingName(true);
-      
+      setIsUpdatingName(true);
+
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName.trim() })
+        .update({ full_name: fullName })
         .eq('id', user.id);
-      
+
       if (error) throw error;
-      
+
       toast({
-        title: "Profile updated",
-        description: "Your name has been successfully updated.",
+        title: "Name updated",
+        description: "Your full name has been successfully updated.",
       });
-      
+
       setIsEditingName(false);
     } catch (error: any) {
-      console.error("Error updating name:", error);
+      console.error('Error updating name:', error);
       toast({
         variant: "destructive",
-        title: "Failed to update profile",
-        description: error.message || "An error occurred while updating your profile.",
+        title: "Update failed",
+        description: error.message || "Failed to update your name.",
       });
     } finally {
-      setIsSavingName(false);
+      setIsUpdatingName(false);
     }
   };
 
-  const getInitials = (fullName: string | null) => {
-    if (!fullName) return "U";
-    return fullName
-      .split(" ")
-      .map(n => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-  
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return "bg-red-500 hover:bg-red-600";
-      case 'editor':
-        return "bg-blue-500 hover:bg-blue-600";
-      case 'viewer':
-        return "bg-green-500 hover:bg-green-600";
-      default:
-        return "bg-gray-500 hover:bg-gray-600";
-    }
-  };
-  
-  const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrator';
-      case 'editor':
-        return 'Team Lead';
-      case 'viewer':
-        return 'Agent';
-      default:
-        return role.charAt(0).toUpperCase() + role.slice(1);
-    }
-  };
-
-  if (loading) {
+  if (profileLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <Card className="max-w-2xl mx-auto">
-          <CardContent className="py-8">
-            <div className="flex justify-center">
-              <div className="animate-pulse">Loading profile...</div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <Card className="max-w-2xl mx-auto">
+    <div className="container mx-auto py-8 max-w-2xl">
+      <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">My Profile</CardTitle>
-              <CardDescription>View and manage your account information</CardDescription>
-            </div>
-            <Badge className={getRoleBadgeColor(profile?.role || "")}>
-              <Shield className="h-3 w-3 mr-1" />
-              {getRoleDisplay(profile?.role || "")}
-            </Badge>
-          </div>
+          <CardTitle>Profile Information</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={`https://ui-avatars.com/api/?name=${profile?.full_name || "User"}&background=random`} />
-              <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
-            </Avatar>
-            
-            {isEditingName ? (
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter your full name"
-                  />
-                  <Button 
-                    onClick={handleUpdateName}
-                    size="icon"
-                    disabled={isSavingName}
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input value={user?.email || ''} disabled />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Role</Label>
+            <Input value={profile?.role || 'viewer'} disabled />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Full Name</Label>
+            <div className="flex gap-2">
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={!isEditingName}
+                placeholder="Enter your full name"
+              />
+              {!isEditingName ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    onClick={handleNameUpdate}
+                    disabled={isUpdatingName}
                   >
-                    <Save className="h-4 w-4" />
+                    {isUpdatingName ? "Saving..." : "Save"}
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline"
-                    size="icon"
+                    size="sm"
                     onClick={() => {
                       setIsEditingName(false);
-                      setFullName(profile?.full_name || "");
+                      setFullName(profile?.full_name || '');
                     }}
                   >
-                    ✕
+                    Cancel
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-medium text-lg">{profile?.full_name || "Not set"}</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setIsEditingName(true)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">{profile?.email}</p>
-              </div>
-            )}
-          </div>
-          
-          {!passwordChanged && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-4">
-              <div className="flex">
-                <div className="text-yellow-800 dark:text-yellow-400">
-                  <Key className="h-5 w-5" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-400">Password Change Required</h3>
-                  <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                    <p>Please change your password before continuing to use the system.</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Password Changed</Label>
+            <Input 
+              value={profile?.password_changed ? 'Yes' : 'No'} 
+              disabled 
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {forcePasswordChange ? 'Change Password (Required)' : 'Change Password'}
+          </CardTitle>
+          {forcePasswordChange && (
+            <p className="text-sm text-muted-foreground">
+              You must change your password before continuing.
+            </p>
           )}
-          
-          <form onSubmit={handlePasswordChange}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="current-password">Current Password</Label>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
                 <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
+                  placeholder="Enter new password"
                 />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
-              
-              <div>
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <div className="relative">
                 <Input
-                  id="confirm-password"
-                  type="password"
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
+                  placeholder="Confirm new password"
                 />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
-              
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Updating Password..." : "Change Password"}
-              </Button>
             </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isChangingPassword || !newPassword || !confirmPassword}
+            >
+              {isChangingPassword ? "Changing Password..." : "Change Password"}
+            </Button>
           </form>
         </CardContent>
       </Card>
