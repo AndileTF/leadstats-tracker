@@ -122,9 +122,9 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
             teamLeadId = newTeamLead.id;
           }
 
-          // Insert daily stats
+          // Insert daily stats into the duplicate table since daily_stats doesn't exist
           const { error: statsError } = await supabase
-            .from('daily_stats')
+            .from('daily_stats_duplicate')
             .insert({
               team_lead_id: teamLeadId,
               date: row.Date || new Date().toISOString().split('T')[0],

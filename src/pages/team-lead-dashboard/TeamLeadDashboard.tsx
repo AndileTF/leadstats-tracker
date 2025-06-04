@@ -1,19 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { TeamLead, DailyStats } from "@/types/teamLead";
+import { TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { useAuth } from '@/context/AuthContext';
-import { aggregateDataFromAllTables } from '@/utils/dataAggregation';
+import { aggregateDataFromAllTables, AggregatedData } from '@/utils/dataAggregation';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
-  const [stats, setStats] = useState<DailyStats[]>([]);
+  const [stats, setStats] = useState<AggregatedData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange } = useDateRange();
   const { user } = useAuth();
@@ -52,7 +52,7 @@ const TeamLeadDashboard = () => {
 
     // Set up multiple channels for different tables
     const tablesChannels = [
-      'daily_stats',
+      'daily_stats_duplicate',
       'Calls',
       'Emails',
       'Live Chat',

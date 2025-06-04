@@ -17,20 +17,20 @@ import { TeamNetworkGraph } from "@/components/dashboard/TeamNetworkGraph";
 import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
-import { aggregateDataFromAllTables } from "@/utils/dataAggregation";
+import { aggregateDataFromAllTables, AggregatedData } from "@/utils/dataAggregation";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange } = useDateRange();
-  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const [dailyStats, setDailyStats] = useState<AggregatedData[]>([]);
   const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   
   useEffect(() => {
     // Set up real-time subscriptions for all tables
     const tablesChannels = [
-      'daily_stats',
+      'daily_stats_duplicate',
       'Calls', 
       'Emails',
       'Live Chat',

@@ -2,6 +2,8 @@
 import { localDbClient } from "./localDbClient";
 
 export interface AggregatedData {
+  id: string;
+  team_lead_id: string;
   date: string;
   calls: number;
   emails: number;
@@ -9,12 +11,14 @@ export interface AggregatedData {
   escalations: number;
   qa_assessments: number;
   survey_tickets: number;
+  sla_percentage: number;
+  created_at: string;
 }
 
 export const aggregateDataFromAllTables = async (
-  teamLeadId?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  teamLeadId?: string
 ): Promise<AggregatedData[]> => {
   try {
     console.log('Aggregating data from all tables for:', { teamLeadId, startDate, endDate });
@@ -39,6 +43,8 @@ export const aggregateDataFromAllTables = async (
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
+          id: `aggregated-${date}-${teamLeadId || 'all'}`,
+          team_lead_id: teamLeadId || record.team_lead_id || '',
           date,
           calls: 0,
           emails: 0,
@@ -46,6 +52,8 @@ export const aggregateDataFromAllTables = async (
           escalations: 0,
           qa_assessments: 0,
           survey_tickets: 0,
+          sla_percentage: 100,
+          created_at: new Date().toISOString(),
         });
       }
       const existing = aggregatedMap.get(date)!;
@@ -57,6 +65,8 @@ export const aggregateDataFromAllTables = async (
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
+          id: `aggregated-${date}-${teamLeadId || 'all'}`,
+          team_lead_id: teamLeadId || record.team_lead_id || '',
           date,
           calls: 0,
           emails: 0,
@@ -64,6 +74,8 @@ export const aggregateDataFromAllTables = async (
           escalations: 0,
           qa_assessments: 0,
           survey_tickets: 0,
+          sla_percentage: 100,
+          created_at: new Date().toISOString(),
         });
       }
       const existing = aggregatedMap.get(date)!;
@@ -75,6 +87,8 @@ export const aggregateDataFromAllTables = async (
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
+          id: `aggregated-${date}-${teamLeadId || 'all'}`,
+          team_lead_id: teamLeadId || record.team_lead_id || '',
           date,
           calls: 0,
           emails: 0,
@@ -82,6 +96,8 @@ export const aggregateDataFromAllTables = async (
           escalations: 0,
           qa_assessments: 0,
           survey_tickets: 0,
+          sla_percentage: 100,
+          created_at: new Date().toISOString(),
         });
       }
       const existing = aggregatedMap.get(date)!;
@@ -93,6 +109,8 @@ export const aggregateDataFromAllTables = async (
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
+          id: `aggregated-${date}-${teamLeadId || 'all'}`,
+          team_lead_id: teamLeadId || record.team_lead_id || '',
           date,
           calls: 0,
           emails: 0,
@@ -100,6 +118,8 @@ export const aggregateDataFromAllTables = async (
           escalations: 0,
           qa_assessments: 0,
           survey_tickets: 0,
+          sla_percentage: 100,
+          created_at: new Date().toISOString(),
         });
       }
       const existing = aggregatedMap.get(date)!;
@@ -111,6 +131,8 @@ export const aggregateDataFromAllTables = async (
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
+          id: `aggregated-${date}-${teamLeadId || 'all'}`,
+          team_lead_id: teamLeadId || record.team_lead_id || '',
           date,
           calls: 0,
           emails: 0,
@@ -118,6 +140,8 @@ export const aggregateDataFromAllTables = async (
           escalations: 0,
           qa_assessments: 0,
           survey_tickets: 0,
+          sla_percentage: 100,
+          created_at: new Date().toISOString(),
         });
       }
       const existing = aggregatedMap.get(date)!;
@@ -129,6 +153,8 @@ export const aggregateDataFromAllTables = async (
       const date = record.date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
+          id: `aggregated-${date}-${teamLeadId || 'all'}`,
+          team_lead_id: teamLeadId || record.team_lead_id || '',
           date,
           calls: 0,
           emails: 0,
@@ -136,6 +162,8 @@ export const aggregateDataFromAllTables = async (
           escalations: 0,
           qa_assessments: 0,
           survey_tickets: 0,
+          sla_percentage: 100,
+          created_at: new Date().toISOString(),
         });
       }
       const existing = aggregatedMap.get(date)!;
