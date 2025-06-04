@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { localDbClient } from "@/utils/localDbClient";
 
 interface StatFormProps {
   teamLeadId: string;
@@ -27,99 +27,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     setIsSubmitting(true);
     
     try {
-      const currentDate = new Date().toISOString().split('T')[0];
-      
-      // Get team lead name for the individual tables
-      const { data: teamLead, error: teamLeadError } = await supabase
-        .from('team_leads')
-        .select('name')
-        .eq('id', teamLeadId)
-        .single();
-
-      if (teamLeadError) throw teamLeadError;
-
-      const insertPromises = [];
-
-      // Insert into Calls table if calls > 0
-      if (stats.calls > 0) {
-        insertPromises.push(
-          supabase.from('Calls').insert({
-            Date: currentDate,
-            team_lead_id: teamLeadId,
-            call_count: stats.calls,
-            Name: teamLead.name
-          })
-        );
-      }
-
-      // Insert into Emails table if emails > 0
-      if (stats.emails > 0) {
-        insertPromises.push(
-          supabase.from('Emails').insert({
-            Date: currentDate,
-            team_lead_id: teamLeadId,
-            email_count: stats.emails,
-            Name: teamLead.name
-          })
-        );
-      }
-
-      // Insert into Live Chat table if live_chat > 0
-      if (stats.live_chat > 0) {
-        insertPromises.push(
-          supabase.from('Live Chat').insert({
-            Date: currentDate,
-            team_lead_id: teamLeadId,
-            chat_count: stats.live_chat,
-            Name: teamLead.name
-          })
-        );
-      }
-
-      // Insert into Escalations table if escalations > 0
-      if (stats.escalations > 0) {
-        insertPromises.push(
-          supabase.from('Escalations').insert({
-            Date: currentDate,
-            team_lead_id: teamLeadId,
-            escalation_count: stats.escalations,
-            Name: teamLead.name
-          })
-        );
-      }
-
-      // Insert into QA Table if qa_assessments > 0
-      if (stats.qa_assessments > 0) {
-        insertPromises.push(
-          supabase.from('QA Table').insert({
-            Date: currentDate,
-            team_lead_id: teamLeadId,
-            assessment_count: stats.qa_assessments,
-            Assessor: teamLead.name
-          })
-        );
-      }
-
-      // Insert into After Call Survey Tickets table if survey_tickets > 0
-      if (stats.survey_tickets > 0) {
-        insertPromises.push(
-          supabase.from('After Call Survey Tickets').insert({
-            date: currentDate,
-            team_lead_id: teamLeadId,
-            ticket_count: stats.survey_tickets
-          })
-        );
-      }
-
-      // Execute all insertions
-      const results = await Promise.allSettled(insertPromises);
-      
-      // Check for any failed insertions
-      const failures = results.filter(result => result.status === 'rejected');
-      if (failures.length > 0) {
-        console.error('Some insertions failed:', failures);
-        throw new Error(`Failed to insert data into ${failures.length} table(s)`);
-      }
+      await localDbClient.insertStats(teamLeadId, stats);
 
       toast({
         title: "Stats Added",
