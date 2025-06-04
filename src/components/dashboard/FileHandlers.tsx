@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TeamLeadOverview } from "@/types/teamLead";
 import { supabase } from "@/integrations/supabase/client";
+import { localDbClient } from "@/utils/localDbClient";
 
 interface FileHandlersProps {
   data: TeamLeadOverview[];
@@ -97,7 +98,7 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
 
         console.log('Validated data:', jsonData);
 
-        // First, ensure team lead exists
+        // First, ensure team lead exists and get/create team lead ID
         for (const row of jsonData) {
           if (!row.Name) continue;
 
@@ -122,30 +123,22 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
             teamLeadId = newTeamLead.id;
           }
 
-          // Insert daily stats into the duplicate table since daily_stats doesn't exist
-          const { error: statsError } = await supabase
-            .from('daily_stats_duplicate')
-            .insert({
-              team_lead_id: teamLeadId,
-              date: row.Date || new Date().toISOString().split('T')[0],
-              calls: row.Calls || 0,
-              emails: row.Emails || 0,
-              live_chat: row.LiveChat || 0,
-              escalations: row.Escalations || 0,
-              qa_assessments: row.QAAssessments || 0,
-              survey_tickets: row.SurveyTickets || 0,
-              sla_percentage: row.SLAPercentage || 100
-            });
+          // Use localDbClient to insert stats into individual channel tables
+          const statsToInsert = {
+            calls: row.Calls || 0,
+            emails: row.Emails || 0,
+            live_chat: row.LiveChat || 0,
+            escalations: row.Escalations || 0,
+            qa_assessments: row.QAAssessments || 0,
+            survey_tickets: row.SurveyTickets || 0,
+          };
 
-          if (statsError) {
-            console.error('Error inserting stats:', statsError);
-            throw statsError;
-          }
+          await localDbClient.insertStats(teamLeadId, statsToInsert);
         }
 
         toast({
           title: "Success",
-          description: `Imported ${jsonData.length} rows successfully`,
+          description: `Imported ${jsonData.length} rows successfully into individual channel tables`,
         });
 
         // Refresh the page to show new data
