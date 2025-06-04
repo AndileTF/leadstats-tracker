@@ -111,7 +111,7 @@ export type Database = {
           },
         ]
       }
-      daily_stats: {
+      daily_stats_duplicate: {
         Row: {
           calls: number | null
           created_at: string
@@ -153,7 +153,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "daily_stats_team_lead_id_fkey"
+            foreignKeyName: "daily_stats_duplicate_team_lead_id_fkey"
             columns: ["team_lead_id"]
             isOneToOne: false
             referencedRelation: "team_leads"
@@ -351,21 +351,7 @@ export type Database = {
       }
     }
     Views: {
-      team_lead_overview: {
-        Row: {
-          average_sla: number | null
-          end_date: string | null
-          name: string | null
-          start_date: string | null
-          total_calls: number | null
-          total_days: number | null
-          total_emails: number | null
-          total_escalations: number | null
-          total_live_chat: number | null
-          total_qa_assessments: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_profile_role: {
