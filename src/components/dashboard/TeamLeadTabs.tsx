@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { dbClient } from "@/lib/database";
 import { AgentsList } from "./AgentsList";
 import { toast } from "@/hooks/use-toast";
 
@@ -46,73 +46,27 @@ export const TeamLeadTabs = ({
     if (!selectedTab) return;
     
     fetchAgents(selectedTab);
-    console.log("Setting up realtime subscription for team lead:", selectedTab);
-    
-    // Set up multiple realtime subscriptions
-    const agentsChannel = supabase
-      .channel('agents-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'agents',
-          filter: `team_lead_id=eq.${selectedTab}`
-        },
-        (payload) => {
-          console.log('Agents update received:', payload);
-          fetchAgents(selectedTab);
-          toast({
-            title: "Agents Updated",
-            description: "The agents list has been refreshed",
-          });
-        }
-      )
-      .subscribe();
-      
-    // Listen for team_leads changes
-    const teamLeadsChannel = supabase
-      .channel('team-leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'team_leads'
-        },
-        () => {
-          // Refresh the parent component's team leads data
-          console.log('Team leads update detected');
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log("Cleaning up realtime subscriptions");
-      supabase.removeChannel(agentsChannel);
-      supabase.removeChannel(teamLeadsChannel);
-    };
   }, [selectedTab]);
 
   const fetchAgents = async (teamLeadId: string) => {
     try {
       console.log("Fetching agents for team lead:", teamLeadId);
       setIsLoadingAgents(true);
-      const { data, error } = await supabase
-        .from('agents')
-        .select('*')
-        .eq('team_lead_id', teamLeadId)
-        .order('start_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching agents:', error);
-        throw error;
-      }
+      
+      const data = await dbClient.executeQuery(
+        'SELECT * FROM agents WHERE team_lead_id = $1 ORDER BY start_date DESC',
+        [teamLeadId]
+      );
       
       console.log("Agents fetched:", data?.length || 0, data);
       setAgents(data || []);
     } catch (error) {
       console.error('Error fetching agents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch agents",
+        variant: "destructive",
+      });
     } finally {
       setIsLoadingAgents(false);
     }

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
+import { dbClient } from "@/lib/database";
 import { Agent } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -73,34 +73,26 @@ export const AgentForm = ({ isOpen, onClose, teamLeadId, agent, onSuccess }: Age
         team_lead_id: teamLeadId,
       };
 
-      let error;
-      
       if (isEditing && agent) {
         // Update existing agent
-        const { error: updateError } = await supabase
-          .from("agents")
-          .update(agentData)
-          .eq("id", agent.id);
-          
-        error = updateError;
+        await dbClient.executeQuery(
+          'UPDATE agents SET name = $1, group_name = $2, start_date = $3 WHERE id = $4',
+          [agentData.name, agentData.group_name, agentData.start_date, agent.id]
+        );
       } else {
         // Insert new agent
-        const { error: insertError } = await supabase
-          .from("agents")
-          .insert([agentData]);
-          
-        error = insertError;
+        await dbClient.executeQuery(
+          'INSERT INTO agents (name, group_name, start_date, team_lead_id) VALUES ($1, $2, $3, $4)',
+          [agentData.name, agentData.group_name, agentData.start_date, agentData.team_lead_id]
+        );
       }
 
-      if (error) throw error;
-
       // Update team lead's agent count
-      await supabase
-        .from("team_leads")
-        .update({
-          assigned_agents_count: await getAgentCount(teamLeadId)
-        })
-        .eq("id", teamLeadId);
+      const agentCount = await getAgentCount(teamLeadId);
+      await dbClient.executeQuery(
+        'UPDATE team_leads SET assigned_agents_count = $1 WHERE id = $2',
+        [agentCount, teamLeadId]
+      );
 
       toast({
         title: isEditing ? "Agent Updated" : "Agent Added",
@@ -122,17 +114,16 @@ export const AgentForm = ({ isOpen, onClose, teamLeadId, agent, onSuccess }: Age
   };
 
   const getAgentCount = async (teamLeadId: string): Promise<number> => {
-    const { count, error } = await supabase
-      .from("agents")
-      .select("*", { count: "exact", head: true })
-      .eq("team_lead_id", teamLeadId);
-      
-    if (error) {
+    try {
+      const result = await dbClient.executeQuery(
+        'SELECT COUNT(*) as count FROM agents WHERE team_lead_id = $1',
+        [teamLeadId]
+      );
+      return parseInt(result[0]?.count) || 0;
+    } catch (error) {
       console.error("Error getting agent count:", error);
       return 0;
     }
-    
-    return count || 0;
   };
 
   return (

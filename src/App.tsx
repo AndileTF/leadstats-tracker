@@ -9,8 +9,6 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { DateProvider } from "./context/DateContext";
 import { NavBar } from "./components/NavBar";
-import { useEffect } from "react";
-import { enableRealtimeForTables } from "./integrations/supabase/enableRealtime";
 
 // Pages
 import Login from "./pages/auth/Login";
@@ -25,11 +23,6 @@ import ProfilePage from "./pages/profile/ProfilePage";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Enable realtime when the app initializes
-  useEffect(() => {
-    enableRealtimeForTables();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
