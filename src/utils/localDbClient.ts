@@ -1,14 +1,21 @@
 
-import { supabase } from "@/integrations/supabase/client";
-
 export class LocalDbClient {
   private async executeQuery(query: string, params: any[] = []) {
     try {
-      const { data, error } = await supabase.functions.invoke('postgres-proxy', {
-        body: { query, params }
+      const response = await fetch('/api/postgres-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, params })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       if (!data.success) throw new Error(data.error);
 
       return data.data;

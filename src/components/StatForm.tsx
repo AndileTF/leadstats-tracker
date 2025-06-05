@@ -47,7 +47,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
       console.error('Error adding stats:', error);
       toast({
         title: "Error",
-        description: "Failed to add stats. Please try again.",
+        description: "Failed to add stats to local database. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -5,7 +5,6 @@ import { Download, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TeamLeadOverview } from "@/types/teamLead";
-import { supabase } from "@/integrations/supabase/client";
 import { localDbClient } from "@/utils/localDbClient";
 
 interface FileHandlersProps {
@@ -98,29 +97,25 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
 
         console.log('Validated data:', jsonData);
 
-        // First, ensure team lead exists and get/create team lead ID
+        // Process each row and insert into local database
         for (const row of jsonData) {
           if (!row.Name) continue;
 
-          // Check if team lead exists
-          const { data: existingTeamLead } = await supabase
-            .from('team_leads')
-            .select('id')
-            .eq('name', row.Name)
-            .single();
+          // Check if team lead exists in local database
+          const existingTeamLeads = await localDbClient.executeQuery(
+            'SELECT id FROM team_leads WHERE name = $1',
+            [row.Name]
+          );
 
-          let teamLeadId = existingTeamLead?.id;
+          let teamLeadId = existingTeamLeads[0]?.id;
 
-          // If team lead doesn't exist, create them
+          // If team lead doesn't exist, create them in local database
           if (!teamLeadId) {
-            const { data: newTeamLead, error: createError } = await supabase
-              .from('team_leads')
-              .insert({ name: row.Name })
-              .select('id')
-              .single();
-
-            if (createError) throw createError;
-            teamLeadId = newTeamLead.id;
+            const newTeamLeads = await localDbClient.executeQuery(
+              'INSERT INTO team_leads (name) VALUES ($1) RETURNING id',
+              [row.Name]
+            );
+            teamLeadId = newTeamLeads[0].id;
           }
 
           // Use localDbClient to insert stats into individual channel tables

@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { TeamLeadOverview, DailyStats, TeamLead } from "@/types/teamLead";
+import { TeamLeadOverview, TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { PerformanceTable } from "@/components/dashboard/PerformanceTable";
@@ -18,6 +17,7 @@ import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
 import { aggregateDataFromAllTables, AggregatedData } from "@/utils/dataAggregation";
+import { localDbClient } from "@/utils/localDbClient";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
@@ -28,59 +28,14 @@ const TeamOverview = () => {
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   
   useEffect(() => {
-    // Set up real-time subscriptions for all tables
-    const tablesChannels = [
-      'daily_stats_duplicate',
-      'Calls', 
-      'Emails',
-      'Live Chat',
-      'Escalations',
-      'QA Table',
-      'After Call Survey Tickets',
-      'team_leads',
-      'agents'
-    ].map(tableName => {
-      return supabase
-        .channel(`overview-${tableName}-changes`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: tableName
-          },
-          (payload) => {
-            console.log(`Real-time update received for ${tableName}:`, payload);
-            const changeDate = (payload.new as any)?.date || (payload.new as any)?.Date;
-            if (!changeDate || (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate)) {
-              fetchTeamLeads();
-              fetchOverview();
-              fetchDailyStats();
-              toast({
-                title: "Data Updated",
-                description: `${tableName} data has been refreshed`
-              });
-            }
-          }
-        )
-        .subscribe();
-    });
-      
     fetchTeamLeads();
     fetchOverview();
     fetchDailyStats();
-    
-    return () => {
-      tablesChannels.forEach(channel => {
-        supabase.removeChannel(channel);
-      });
-    };
   }, [dateRange]);
 
   const fetchTeamLeads = async () => {
     try {
-      const { data, error } = await supabase.from('team_leads').select('*');
-      if (error) throw error;
+      const data = await localDbClient.getTeamLeads();
       setTeamLeads(data);
       if (data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
@@ -89,7 +44,7 @@ const TeamOverview = () => {
       console.error('Error fetching team leads:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch team leads",
+        description: "Failed to fetch team leads from local database",
         variant: "destructive"
       });
     }
@@ -102,12 +57,8 @@ const TeamOverview = () => {
       
       setOverview([]);
       
-      // Get all team leads
-      const { data: teamLeadsData, error: teamLeadsError } = await supabase
-        .from('team_leads')
-        .select('*');
-        
-      if (teamLeadsError) throw teamLeadsError;
+      // Get all team leads from local database
+      const teamLeadsData = await localDbClient.getTeamLeads();
       
       // Aggregate data for each team lead
       const overviewPromises = teamLeadsData.map(async (teamLead) => {
@@ -170,7 +121,7 @@ const TeamOverview = () => {
       console.error('Error fetching overview:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch overview data from all tables",
+        description: "Failed to fetch overview data from local database",
         variant: "destructive"
       });
     } finally {
@@ -191,7 +142,7 @@ const TeamOverview = () => {
       console.error('Error fetching daily stats:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch daily statistics from all tables",
+        description: "Failed to fetch daily statistics from local database",
         variant: "destructive"
       });
     }

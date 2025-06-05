@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
 import { TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
 import { DashboardHeader } from './DashboardHeader';
@@ -8,6 +7,7 @@ import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { useAuth } from '@/context/AuthContext';
 import { aggregateDataFromAllTables, AggregatedData } from '@/utils/dataAggregation';
+import { localDbClient } from '@/utils/localDbClient';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -20,98 +20,26 @@ const TeamLeadDashboard = () => {
 
   useEffect(() => {
     fetchTeamLeads();
-    
-    // Set up realtime subscription for team_leads table
-    const teamLeadsChannel = supabase
-      .channel('dashboard-team-leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'team_leads'
-        },
-        (payload) => {
-          console.log('Team leads update received:', payload);
-          fetchTeamLeads();
-          toast({
-            title: "Team Leads Updated",
-            description: "Team leads data has been refreshed",
-          });
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(teamLeadsChannel);
-    };
   }, []);
 
   useEffect(() => {
-    if (!selectedTeamLead) return;
-
-    // Set up multiple channels for different tables
-    const tablesChannels = [
-      'daily_stats_duplicate',
-      'Calls',
-      'Emails',
-      'Live Chat',
-      'Escalations', 
-      'QA Table',
-      'After Call Survey Tickets'
-    ].map(tableName => {
-      return supabase
-        .channel(`dashboard-${tableName}-changes`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: tableName,
-            filter: tableName === 'After Call Survey Tickets' ? 
-              `team_lead_id=eq.${selectedTeamLead}` : 
-              `team_lead_id=eq.${selectedTeamLead}`
-          },
-          (payload) => {
-            console.log(`${tableName} update received:`, payload);
-            const changeDate = (payload.new as any).date || (payload.new as any).Date;
-            if (changeDate >= dateRange.startDate && changeDate <= dateRange.endDate) {
-              fetchStats();
-              toast({
-                title: "Data Updated",
-                description: `${tableName} data has been refreshed`,
-              });
-            }
-          }
-        )
-        .subscribe();
-    });
-
-    fetchStats();
-
-    return () => {
-      tablesChannels.forEach(channel => {
-        supabase.removeChannel(channel);
-      });
-    };
+    if (selectedTeamLead) {
+      fetchStats();
+    }
   }, [selectedTeamLead, dateRange]);
 
   const fetchTeamLeads = async () => {
     try {
-      const { data, error } = await supabase
-        .from('team_leads')
-        .select('*');
-
-      if (error) throw error;
-
+      const data = await localDbClient.getTeamLeads();
       setTeamLeads(data);
       if (data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
       }
     } catch (error) {
+      console.error('Error fetching team leads:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch team leads",
+        description: "Failed to fetch team leads from local database",
         variant: "destructive",
       });
     } finally {
@@ -126,7 +54,7 @@ const TeamLeadDashboard = () => {
       console.log('Fetching aggregated stats from all tables with date range:', dateRange);
       setIsLoading(true);
       
-      // Use the new aggregation function to get data from all tables
+      // Use the aggregation function to get data from all tables
       const aggregatedStats = await aggregateDataFromAllTables(
         dateRange.startDate,
         dateRange.endDate,
