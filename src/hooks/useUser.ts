@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -26,29 +25,14 @@ export const useUser = () => {
       }
 
       try {
-        // Using RPC function to avoid infinite recursion in policies
-        const { data, error } = await supabase.rpc('get_profile_role', {
-          user_id: user.id
-        });
-        
-        if (error) throw error;
-        
-        // Get additional profile data
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (profileError) throw profileError;
-        
-        // Create profile object with data we have
+        // Since we're removing Supabase, we'll create a mock profile
+        // You can replace this with your local database user management
         setProfile({
-          id: user.id,
-          email: user.email || '',
-          full_name: profileData?.full_name || user.user_metadata?.full_name || null,
-          role: data || 'editor', // Default to editor if no role found
-          password_changed: profileData?.password_changed
+          id: user.id || 'local-user',
+          email: user.email || 'admin@local.com',
+          full_name: user.user_metadata?.full_name || 'Local Admin',
+          role: 'admin', // Default to admin for local setup
+          password_changed: true
         });
       } catch (error: any) {
         console.error("Error loading user data:", error);

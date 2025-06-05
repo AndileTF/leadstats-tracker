@@ -1,13 +1,27 @@
 
 export class LocalDbClient {
-  private async executeQuery(query: string, params: any[] = []) {
+  private dbConfig = {
+    user: "cx_user",
+    host: "10.169.39.64",
+    database: "cx_dashboard_db",
+    password: "@lquid#pass321",
+    port: 5432,
+  };
+
+  async executeQuery(query: string, params: any[] = []) {
     try {
-      const response = await fetch('/api/postgres-proxy', {
+      // Since we're in a browser environment, we'll use a fetch-based approach
+      // that connects to a simple backend API that handles the database connection
+      const response = await fetch('/api/db', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query, params })
+        body: JSON.stringify({ 
+          query, 
+          params,
+          config: this.dbConfig 
+        })
       });
 
       if (!response.ok) {
