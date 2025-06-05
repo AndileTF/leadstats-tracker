@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { TeamLead } from "@/types/teamLead";
 import { toast } from "@/hooks/use-toast";
@@ -7,7 +6,7 @@ import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { useAuth } from '@/context/AuthContext';
 import { aggregateDataFromAllTables, AggregatedData } from '@/utils/dataAggregation';
-import { localDbClient } from '@/utils/localDbClient';
+import { dbClient } from '@/lib/database';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -30,7 +29,7 @@ const TeamLeadDashboard = () => {
 
   const fetchTeamLeads = async () => {
     try {
-      const data = await localDbClient.getTeamLeads();
+      const data = await dbClient.getTeamLeads();
       setTeamLeads(data);
       if (data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
@@ -54,7 +53,6 @@ const TeamLeadDashboard = () => {
       console.log('Fetching aggregated stats from all tables with date range:', dateRange);
       setIsLoading(true);
       
-      // Use the aggregation function to get data from all tables
       const aggregatedStats = await aggregateDataFromAllTables(
         dateRange.startDate,
         dateRange.endDate,

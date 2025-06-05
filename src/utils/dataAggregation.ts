@@ -1,5 +1,4 @@
-
-import { localDbClient } from "./localDbClient";
+import { dbClient } from "@/lib/database";
 
 export interface AggregatedData {
   id: string;
@@ -23,14 +22,14 @@ export const aggregateDataFromAllTables = async (
   try {
     console.log('Aggregating data from all tables for:', { teamLeadId, startDate, endDate });
 
-    // Fetch data from all tables
+    // Fetch data from all tables using the new database client
     const [calls, emails, liveChat, escalations, qaAssessments, surveyTickets] = await Promise.all([
-      localDbClient.getCalls(teamLeadId, startDate, endDate),
-      localDbClient.getEmails(teamLeadId, startDate, endDate),
-      localDbClient.getLiveChat(teamLeadId, startDate, endDate),
-      localDbClient.getEscalations(teamLeadId, startDate, endDate),
-      localDbClient.getQAAssessments(teamLeadId, startDate, endDate),
-      localDbClient.getSurveyTickets(teamLeadId, startDate, endDate),
+      dbClient.getCalls(teamLeadId, startDate, endDate),
+      dbClient.getEmails(teamLeadId, startDate, endDate),
+      dbClient.getLiveChat(teamLeadId, startDate, endDate),
+      dbClient.getEscalations(teamLeadId, startDate, endDate),
+      dbClient.getQAAssessments(teamLeadId, startDate, endDate),
+      dbClient.getSurveyTickets(teamLeadId, startDate, endDate),
     ]);
 
     console.log('Raw data fetched:', { calls, emails, liveChat, escalations, qaAssessments, surveyTickets });

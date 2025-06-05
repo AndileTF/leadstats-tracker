@@ -1,12 +1,24 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Session, User } from "@supabase/supabase-js";
+
+// Define mock user and session types for local auth
+interface MockUser {
+  id: string;
+  email: string;
+  user_metadata?: {
+    full_name?: string;
+  };
+}
+
+interface MockSession {
+  user: MockUser;
+  access_token: string;
+}
 
 type AuthContextType = {
-  session: Session | null;
-  user: User | null;
+  session: MockSession | null;
+  user: MockUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
@@ -18,44 +30,20 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<MockSession | null>(null);
+  const [user, setUser] = useState<MockUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [forcePasswordChange, setForcePasswordChange] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        // Synchronously update the session and user state
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        // For debugging
-        console.log('Auth state changed:', event, newSession?.user?.email);
-      }
-    );
-
-    // Then check for existing session
+    // Check for existing session in localStorage
     const initializeAuth = async () => {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('Initial session check:', currentSession?.user?.email || 'No session');
-        
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        // Check if user needs to change password
-        if (currentSession?.user) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('password_changed')
-            .eq('id', currentSession.user.id)
-            .single();
-          
-          if (!error && data) {
-            setForcePasswordChange(!data.password_changed);
-          }
+        const savedSession = localStorage.getItem('cx_dashboard_session');
+        if (savedSession) {
+          const parsedSession = JSON.parse(savedSession);
+          setSession(parsedSession);
+          setUser(parsedSession.user);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -65,33 +53,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initializeAuth();
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        throw error;
+      // Mock authentication for demo purposes
+      // In a real application, you would validate against your database
+      if (email && password) {
+        const mockUser: MockUser = {
+          id: 'local-user-' + Date.now(),
+          email: email,
+          user_metadata: {
+            full_name: 'Local User'
+          }
+        };
+
+        const mockSession: MockSession = {
+          user: mockUser,
+          access_token: 'mock-token-' + Date.now()
+        };
+
+        setSession(mockSession);
+        setUser(mockUser);
+        
+        // Save session to localStorage
+        localStorage.setItem('cx_dashboard_session', JSON.stringify(mockSession));
+        
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+      } else {
+        throw new Error('Please provide valid email and password');
       }
-      
-      // Check if user needs to change password on first login
-      const { data, error: profileError } = await supabase
-        .from('profiles')
-        .select('password_changed')
-        .eq('email', email)
-        .single();
-      
-      if (!profileError && data) {
-        setForcePasswordChange(!data.password_changed);
-      }
-      
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -104,24 +98,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
-      
-      if (error) {
-        throw error;
+      // Mock signup for demo purposes
+      if (email && password && fullName) {
+        toast({
+          title: "Account created",
+          description: "Account created successfully. You can now sign in.",
+        });
+      } else {
+        throw new Error('Please provide all required information');
       }
-      
-      toast({
-        title: "Account created",
-        description: "Check your email to confirm your account.",
-      });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -134,10 +119,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
+      setSession(null);
+      setUser(null);
+      localStorage.removeItem('cx_dashboard_session');
+      
       toast({
         title: "Signed out",
         description: "You have been successfully signed out.",
@@ -154,35 +139,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createUser = async (email: string, password: string, fullName: string, role: string) => {
     try {
-      // First create the user in auth system
-      const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName,
-        },
+      // Mock user creation for demo purposes
+      toast({
+        title: "User created",
+        description: `User ${email} has been successfully created.`,
       });
-
-      if (signUpError) throw signUpError;
-      
-      if (signUpData.user) {
-        // Then manually update the role in profiles table if needed
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            role,
-            password_changed: false // Force new users to change password
-          })
-          .eq('id', signUpData.user.id);
-          
-        if (updateError) throw updateError;
-        
-        toast({
-          title: "User created",
-          description: `User ${email} has been successfully created.`,
-        });
-      }
     } catch (error: any) {
       toast({
         variant: "destructive",

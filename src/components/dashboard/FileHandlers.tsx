@@ -5,7 +5,7 @@ import { Download, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TeamLeadOverview } from "@/types/teamLead";
-import { localDbClient } from "@/utils/localDbClient";
+import { dbClient } from "@/lib/database";
 
 interface FileHandlersProps {
   data: TeamLeadOverview[];
@@ -23,18 +23,12 @@ interface ExcelRowData {
   SLAPercentage: number;
 }
 
-/**
- * Validates the Excel row data
- * @param row - Row data from Excel
- * @returns boolean indicating if the row is valid
- */
 const validateExcelRow = (row: any): row is ExcelRowData => {
   if (!row.Name || typeof row.Name !== 'string') {
     console.error('Invalid or missing Name:', row);
     return false;
   }
 
-  // Convert date string to proper format if needed
   if (row.Date) {
     try {
       row.Date = new Date(row.Date).toISOString().split('T')[0];
@@ -44,7 +38,6 @@ const validateExcelRow = (row: any): row is ExcelRowData => {
     }
   }
 
-  // Ensure numeric fields are numbers and non-negative
   const numericFields = ['Calls', 'Emails', 'LiveChat', 'Escalations', 'QAAssessments', 'SurveyTickets'];
   for (const field of numericFields) {
     row[field] = Number(row[field]) || 0;
@@ -54,7 +47,6 @@ const validateExcelRow = (row: any): row is ExcelRowData => {
     }
   }
 
-  // Validate SLA percentage
   row.SLAPercentage = Number(row.SLAPercentage) || 100;
   if (row.SLAPercentage < 0 || row.SLAPercentage > 100) {
     console.error('Invalid SLA percentage:', row);
@@ -64,15 +56,7 @@ const validateExcelRow = (row: any): row is ExcelRowData => {
   return true;
 };
 
-/**
- * Component for handling file import and export functionality
- * @param data - Array of team lead overview data for exporting
- */
 export const FileHandlers = ({ data }: FileHandlersProps) => {
-  /**
-   * Handles Excel file upload and database insertion
-   * @param event - File input change event
-   */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -88,7 +72,6 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
 
         console.log('Raw Excel data:', rawData);
 
-        // Validate and clean the data
         const jsonData = rawData.filter(validateExcelRow);
 
         if (jsonData.length === 0) {
@@ -97,12 +80,11 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
 
         console.log('Validated data:', jsonData);
 
-        // Process each row and insert into local database
         for (const row of jsonData) {
           if (!row.Name) continue;
 
           // Check if team lead exists in local database
-          const existingTeamLeads = await localDbClient.executeQuery(
+          const existingTeamLeads = await dbClient.executeQuery(
             'SELECT id FROM team_leads WHERE name = $1',
             [row.Name]
           );
@@ -111,14 +93,14 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
 
           // If team lead doesn't exist, create them in local database
           if (!teamLeadId) {
-            const newTeamLeads = await localDbClient.executeQuery(
+            const newTeamLeads = await dbClient.executeQuery(
               'INSERT INTO team_leads (name) VALUES ($1) RETURNING id',
               [row.Name]
             );
             teamLeadId = newTeamLeads[0].id;
           }
 
-          // Use localDbClient to insert stats into individual channel tables
+          // Use dbClient to insert stats into individual channel tables
           const statsToInsert = {
             calls: row.Calls || 0,
             emails: row.Emails || 0,
@@ -128,7 +110,7 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
             survey_tickets: row.SurveyTickets || 0,
           };
 
-          await localDbClient.insertStats(teamLeadId, statsToInsert);
+          await dbClient.insertStats(teamLeadId, statsToInsert);
         }
 
         toast({
@@ -136,7 +118,6 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
           description: `Imported ${jsonData.length} rows successfully into individual channel tables`,
         });
 
-        // Refresh the page to show new data
         window.location.reload();
       };
       reader.readAsArrayBuffer(file);
@@ -150,9 +131,6 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
     }
   };
 
-  /**
-   * Exports overview data to Excel file
-   */
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();

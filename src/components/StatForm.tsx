@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { localDbClient } from "@/utils/localDbClient";
+import { dbClient } from "@/lib/database";
 
 interface StatFormProps {
   teamLeadId: string;
@@ -27,7 +27,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     setIsSubmitting(true);
     
     try {
-      await localDbClient.insertStats(teamLeadId, stats);
+      await dbClient.insertStats(teamLeadId, stats);
 
       toast({
         title: "Stats Added",

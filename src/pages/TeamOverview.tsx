@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { TeamLeadOverview, TeamLead } from "@/types/teamLead";
@@ -17,7 +16,7 @@ import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
 import { aggregateDataFromAllTables, AggregatedData } from "@/utils/dataAggregation";
-import { localDbClient } from "@/utils/localDbClient";
+import { dbClient } from "@/lib/database";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
@@ -35,7 +34,7 @@ const TeamOverview = () => {
 
   const fetchTeamLeads = async () => {
     try {
-      const data = await localDbClient.getTeamLeads();
+      const data = await dbClient.getTeamLeads();
       setTeamLeads(data);
       if (data.length > 0 && !selectedTeamLead) {
         setSelectedTeamLead(data[0].id);
@@ -57,10 +56,9 @@ const TeamOverview = () => {
       
       setOverview([]);
       
-      // Get all team leads from local database
-      const teamLeadsData = await localDbClient.getTeamLeads();
+      const teamLeadsData = await dbClient.getTeamLeads();
       
-      // Aggregate data for each team lead
+      // Get all team leads from local database
       const overviewPromises = teamLeadsData.map(async (teamLead) => {
         try {
           const aggregatedStats = await aggregateDataFromAllTables(
