@@ -1,4 +1,4 @@
-import { dbClient } from "@/lib/database";
+import { dbClient } from "@/lib/supabaseClient";
 
 export interface AggregatedData {
   id: string;
@@ -22,7 +22,7 @@ export const aggregateDataFromAllTables = async (
   try {
     console.log('Aggregating data from all tables for:', { teamLeadId, startDate, endDate });
 
-    // Fetch data from all tables using the new database client
+    // Fetch data from all tables using the Supabase client
     const [calls, emails, liveChat, escalations, qaAssessments, surveyTickets] = await Promise.all([
       dbClient.getCalls(teamLeadId, startDate, endDate),
       dbClient.getEmails(teamLeadId, startDate, endDate),
@@ -38,7 +38,7 @@ export const aggregateDataFromAllTables = async (
     const aggregatedMap = new Map<string, AggregatedData>();
 
     // Process calls data
-    calls.forEach((record: any) => {
+    calls?.forEach((record: any) => {
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
@@ -60,7 +60,7 @@ export const aggregateDataFromAllTables = async (
     });
 
     // Process emails data
-    emails.forEach((record: any) => {
+    emails?.forEach((record: any) => {
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
@@ -82,7 +82,7 @@ export const aggregateDataFromAllTables = async (
     });
 
     // Process live chat data
-    liveChat.forEach((record: any) => {
+    liveChat?.forEach((record: any) => {
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
@@ -104,7 +104,7 @@ export const aggregateDataFromAllTables = async (
     });
 
     // Process escalations data
-    escalations.forEach((record: any) => {
+    escalations?.forEach((record: any) => {
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
@@ -126,7 +126,7 @@ export const aggregateDataFromAllTables = async (
     });
 
     // Process QA assessments data
-    qaAssessments.forEach((record: any) => {
+    qaAssessments?.forEach((record: any) => {
       const date = record.Date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {
@@ -148,7 +148,7 @@ export const aggregateDataFromAllTables = async (
     });
 
     // Process survey tickets data
-    surveyTickets.forEach((record: any) => {
+    surveyTickets?.forEach((record: any) => {
       const date = record.date;
       if (!aggregatedMap.has(date)) {
         aggregatedMap.set(date, {

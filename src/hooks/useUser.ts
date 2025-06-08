@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 type UserProfile = {
@@ -25,15 +26,28 @@ export const useUser = () => {
       }
 
       try {
-        // Since we're removing Supabase, we'll create a mock profile
-        // You can replace this with your local database user management
-        setProfile({
-          id: user.id || 'local-user',
-          email: user.email || 'admin@local.com',
-          full_name: user.user_metadata?.full_name || 'Local Admin',
-          role: 'admin', // Default to admin for local setup
-          password_changed: true
-        });
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+
+        if (data) {
+          setProfile(data);
+        } else {
+          // Create a basic profile if none exists
+          setProfile({
+            id: user.id,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || null,
+            role: user.user_metadata?.role || 'viewer',
+            password_changed: true
+          });
+        }
       } catch (error: any) {
         console.error("Error loading user data:", error);
         toast({

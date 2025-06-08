@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { dbClient } from "@/lib/database";
+import { dbClient } from "@/lib/supabaseClient";
 
 interface StatFormProps {
   teamLeadId: string;
@@ -47,7 +47,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
       console.error('Error adding stats:', error);
       toast({
         title: "Error",
-        description: "Failed to add stats to local database. Please try again.",
+        description: "Failed to add stats. Please try again.",
         variant: "destructive",
       });
     } finally {

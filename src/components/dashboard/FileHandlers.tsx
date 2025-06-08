@@ -5,7 +5,8 @@ import { Download, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TeamLeadOverview } from "@/types/teamLead";
-import { dbClient } from "@/lib/database";
+import { dbClient } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FileHandlersProps {
   data: TeamLeadOverview[];
@@ -83,24 +84,29 @@ export const FileHandlers = ({ data }: FileHandlersProps) => {
         for (const row of jsonData) {
           if (!row.Name) continue;
 
-          // Check if team lead exists in local database
-          const existingTeamLeads = await dbClient.executeQuery(
-            'SELECT id FROM team_leads WHERE name = $1',
-            [row.Name]
-          );
+          // Check if team lead exists
+          const { data: existingTeamLeads, error: teamLeadError } = await supabase
+            .from('team_leads')
+            .select('id')
+            .eq('name', row.Name);
 
-          let teamLeadId = existingTeamLeads[0]?.id;
+          if (teamLeadError) throw teamLeadError;
 
-          // If team lead doesn't exist, create them in local database
+          let teamLeadId = existingTeamLeads?.[0]?.id;
+
+          // If team lead doesn't exist, create them
           if (!teamLeadId) {
-            const newTeamLeads = await dbClient.executeQuery(
-              'INSERT INTO team_leads (name) VALUES ($1) RETURNING id',
-              [row.Name]
-            );
-            teamLeadId = newTeamLeads[0].id;
+            const { data: newTeamLead, error: createError } = await supabase
+              .from('team_leads')
+              .insert({ name: row.Name })
+              .select('id')
+              .single();
+
+            if (createError) throw createError;
+            teamLeadId = newTeamLead.id;
           }
 
-          // Use dbClient to insert stats into individual channel tables
+          // Use Supabase client to insert stats into individual channel tables
           const statsToInsert = {
             calls: row.Calls || 0,
             emails: row.Emails || 0,

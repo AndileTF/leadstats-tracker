@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { LineChart } from "./LineChart";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
-import { dbClient } from "@/lib/database";
+import { supabase } from "@/integrations/supabase/client";
 import { AgentsList } from "./AgentsList";
 import { toast } from "@/hooks/use-toast";
 
@@ -53,10 +53,13 @@ export const TeamLeadTabs = ({
       console.log("Fetching agents for team lead:", teamLeadId);
       setIsLoadingAgents(true);
       
-      const data = await dbClient.executeQuery(
-        'SELECT * FROM agents WHERE team_lead_id = $1 ORDER BY start_date DESC',
-        [teamLeadId]
-      );
+      const { data, error } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('team_lead_id', teamLeadId)
+        .order('start_date', { ascending: false });
+      
+      if (error) throw error;
       
       console.log("Agents fetched:", data?.length || 0, data);
       setAgents(data || []);

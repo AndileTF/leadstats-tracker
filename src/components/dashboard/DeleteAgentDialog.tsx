@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { dbClient } from "@/lib/database";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DeleteAgentDialogProps {
   agent: Agent | null;
@@ -34,17 +34,21 @@ export const DeleteAgentDialog = ({
     try {
       setIsDeleting(true);
       
-      await dbClient.executeQuery(
-        'DELETE FROM agents WHERE id = $1',
-        [agent.id]
-      );
+      const { error } = await supabase
+        .from('agents')
+        .delete()
+        .eq('id', agent.id);
+
+      if (error) throw error;
 
       // Update team lead's agent count
       const agentCount = await getAgentCount(teamLeadId);
-      await dbClient.executeQuery(
-        'UPDATE team_leads SET assigned_agents_count = $1 WHERE id = $2',
-        [agentCount, teamLeadId]
-      );
+      const { error: updateError } = await supabase
+        .from('team_leads')
+        .update({ assigned_agents_count: agentCount })
+        .eq('id', teamLeadId);
+
+      if (updateError) throw updateError;
 
       toast({
         title: "Agent Deleted",
@@ -67,11 +71,13 @@ export const DeleteAgentDialog = ({
 
   const getAgentCount = async (teamLeadId: string): Promise<number> => {
     try {
-      const result = await dbClient.executeQuery(
-        'SELECT COUNT(*) as count FROM agents WHERE team_lead_id = $1',
-        [teamLeadId]
-      );
-      return parseInt(result[0]?.count) || 0;
+      const { count, error } = await supabase
+        .from('agents')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_lead_id', teamLeadId);
+
+      if (error) throw error;
+      return count || 0;
     } catch (error) {
       console.error("Error getting agent count:", error);
       return 0;
