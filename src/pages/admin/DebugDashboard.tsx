@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Define valid table names as a type
+type ValidTableName = "profiles" | "team_leads" | "agents" | "daily_stats_duplicate" | "Calls" | "Emails" | "Escalations" | "Live Chat" | "QA Table" | "After Call Survey Tickets";
+
 const DebugDashboard = () => {
   const [tables, setTables] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>("");
@@ -34,11 +38,11 @@ const DebugDashboard = () => {
   const [connectionStatus, setConnectionStatus] = useState("Checking...");
 
   // Define the available tables from the database
-  const availableTables = [
+  const availableTables: ValidTableName[] = [
     "profiles",
     "team_leads", 
     "agents",
-    "daily_stats",
+    "daily_stats_duplicate",
     "Calls",
     "Emails",
     "Escalations",
@@ -46,6 +50,11 @@ const DebugDashboard = () => {
     "QA Table",
     "After Call Survey Tickets"
   ];
+
+  // Helper function to check if a table name is valid
+  const isValidTableName = (tableName: string): tableName is ValidTableName => {
+    return availableTables.includes(tableName as ValidTableName);
+  };
 
   useEffect(() => {
     // Check connection status by testing a simple query
@@ -113,6 +122,11 @@ const DebugDashboard = () => {
   const fetchTableData = async (tableName: string) => {
     try {
       setIsLoadingData(true);
+      
+      // Check if the table name is valid before querying
+      if (!isValidTableName(tableName)) {
+        throw new Error(`Invalid table name: ${tableName}`);
+      }
       
       const { data, error } = await supabase
         .from(tableName)
