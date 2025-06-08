@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { dbClient } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Database, Bug, Logs } from "lucide-react";
 import {
   Table,
@@ -34,18 +33,18 @@ const DebugDashboard = () => {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("Checking...");
 
-  // Define the available tables from the local database
+  // Define the available tables from the database
   const availableTables = [
     "profiles",
     "team_leads", 
     "agents",
     "daily_stats",
-    "calls",
-    "emails",
-    "escalations",
-    "live_chat",
-    "qa_assessments",
-    "survey_tickets"
+    "Calls",
+    "Emails",
+    "Escalations",
+    "Live Chat",
+    "QA Table",
+    "After Call Survey Tickets"
   ];
 
   useEffect(() => {
@@ -53,10 +52,15 @@ const DebugDashboard = () => {
     const checkConnection = async () => {
       try {
         const startTime = performance.now();
-        await dbClient.executeQuery('SELECT COUNT(*) FROM team_leads', []);
+        const { data, error } = await supabase.from('team_leads').select('count').limit(1);
         const endTime = performance.now();
         
-        setConnectionStatus(`Connected (${Math.round(endTime - startTime)}ms)`);
+        if (error) {
+          console.error("Connection check error:", error);
+          setConnectionStatus("Disconnected");
+        } else {
+          setConnectionStatus(`Connected (${Math.round(endTime - startTime)}ms)`);
+        }
       } catch (error) {
         console.error("Connection check error:", error);
         setConnectionStatus("Disconnected");
@@ -110,10 +114,14 @@ const DebugDashboard = () => {
     try {
       setIsLoadingData(true);
       
-      const data = await dbClient.executeQuery(
-        `SELECT * FROM ${tableName} LIMIT 100`,
-        []
-      );
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .limit(100);
+      
+      if (error) {
+        throw error;
+      }
       
       if (data) {
         setTableData(data);

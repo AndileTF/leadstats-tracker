@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Eye, EyeOff, UserCog, Edit } from "lucide-react";
-import { dbClient } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   Table,
@@ -67,10 +66,14 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       try {
         setIsLoadingUsers(true);
-        const data = await dbClient.executeQuery(
-          'SELECT * FROM profiles ORDER BY created_at DESC',
-          []
-        );
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
         
         setUsers(data || []);
       } catch (error: any) {
@@ -94,10 +97,14 @@ const UserManagement = () => {
       setIsLoading(true);
       await createUser(email, password, fullName, role);
       // Refresh users list
-      const data = await dbClient.executeQuery(
-        'SELECT * FROM profiles ORDER BY created_at DESC',
-        []
-      );
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
       
       setUsers(data || []);
       
@@ -126,10 +133,17 @@ const UserManagement = () => {
     try {
       setIsUpdating(true);
       
-      await dbClient.executeQuery(
-        'UPDATE profiles SET full_name = $1, role = $2 WHERE id = $3',
-        [editFullName, editRole, editingUser.id]
-      );
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editFullName,
+          role: editRole
+        })
+        .eq('id', editingUser.id);
+      
+      if (error) {
+        throw error;
+      }
       
       // Update local state
       setUsers(prevUsers => 
