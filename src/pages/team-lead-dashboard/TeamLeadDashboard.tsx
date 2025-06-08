@@ -6,7 +6,7 @@ import { DashboardContent } from './DashboardContent';
 import { useDateRange } from '@/context/DateContext';
 import { useAuth } from '@/context/AuthContext';
 import { aggregateDataFromAllTables, AggregatedData } from '@/utils/dataAggregation';
-import { dbClient } from '@/lib/database';
+import { dbClient } from '@/lib/supabaseClient';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Eye, EyeOff, UserCog, Edit } from "lucide-react";
-import { dbClient } from "@/lib/database";
+import { dbClient } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
 import {
   Table,

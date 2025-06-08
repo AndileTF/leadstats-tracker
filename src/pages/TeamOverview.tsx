@@ -16,7 +16,7 @@ import { LineChart } from "@/components/dashboard/LineChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
 import { aggregateDataFromAllTables, AggregatedData } from "@/utils/dataAggregation";
-import { dbClient } from "@/lib/database";
+import { dbClient } from "@/lib/supabaseClient";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);

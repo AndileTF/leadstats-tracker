@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { dbClient } from '@/lib/database';
+import { dbClient } from '@/lib/supabaseClient';
 import { Eye, EyeOff, Edit } from 'lucide-react';
 
 const ProfilePage = () => {
