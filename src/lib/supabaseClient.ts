@@ -145,8 +145,8 @@ export class SupabaseClient {
     return data;
   }
 
-  async insertStats(teamLeadId: string, stats: any) {
-    const currentDate = new Date().toISOString().split('T')[0];
+  async insertStats(teamLeadId: string, stats: any, selectedDate?: Date) {
+    const dateToUse = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
     
     // Get team lead name
     const { data: teamLeadData, error: teamLeadError } = await supabase
@@ -164,7 +164,7 @@ export class SupabaseClient {
     if (stats.calls > 0) {
       insertPromises.push(
         supabase.from('Calls').insert({
-          Date: currentDate,
+          Date: dateToUse,
           team_lead_id: teamLeadId,
           call_count: stats.calls,
           Name: teamLeadName
@@ -175,7 +175,7 @@ export class SupabaseClient {
     if (stats.emails > 0) {
       insertPromises.push(
         supabase.from('Emails').insert({
-          Date: currentDate,
+          Date: dateToUse,
           team_lead_id: teamLeadId,
           email_count: stats.emails,
           Name: teamLeadName
@@ -186,7 +186,7 @@ export class SupabaseClient {
     if (stats.live_chat > 0) {
       insertPromises.push(
         supabase.from('Live Chat').insert({
-          Date: currentDate,
+          Date: dateToUse,
           team_lead_id: teamLeadId,
           chat_count: stats.live_chat,
           Name: teamLeadName
@@ -197,7 +197,7 @@ export class SupabaseClient {
     if (stats.escalations > 0) {
       insertPromises.push(
         supabase.from('Escalations').insert({
-          Date: currentDate,
+          Date: dateToUse,
           team_lead_id: teamLeadId,
           escalation_count: stats.escalations,
           Name: teamLeadName
@@ -208,7 +208,7 @@ export class SupabaseClient {
     if (stats.qa_assessments > 0) {
       insertPromises.push(
         supabase.from('QA Table').insert({
-          Date: currentDate,
+          Date: dateToUse,
           team_lead_id: teamLeadId,
           assessment_count: stats.qa_assessments,
           Assessor: teamLeadName
@@ -219,7 +219,7 @@ export class SupabaseClient {
     if (stats.survey_tickets > 0) {
       insertPromises.push(
         supabase.from('After Call Survey Tickets').insert({
-          date: currentDate,
+          date: dateToUse,
           team_lead_id: teamLeadId,
           ticket_count: stats.survey_tickets
         })

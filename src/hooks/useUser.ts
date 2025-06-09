@@ -37,16 +37,45 @@ export const useUser = () => {
         }
 
         if (data) {
+          // Update user role to admin if it's not already
+          if (data.role !== 'admin') {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'admin' })
+              .eq('id', user.id);
+            
+            if (updateError) {
+              console.error('Error updating user role to admin:', updateError);
+            } else {
+              data.role = 'admin';
+            }
+          }
           setProfile(data);
         } else {
-          // Create a basic profile if none exists
-          setProfile({
+          // Create a basic profile if none exists, with admin role
+          const newProfile = {
             id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || null,
-            role: user.user_metadata?.role || 'viewer',
+            role: 'admin',
             password_changed: true
-          });
+          };
+          
+          // Insert the new profile into the database
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email || '',
+              full_name: user.user_metadata?.full_name || null,
+              role: 'admin'
+            });
+          
+          if (insertError) {
+            console.error('Error creating user profile:', insertError);
+          }
+          
+          setProfile(newProfile);
         }
       } catch (error: any) {
         console.error("Error loading user data:", error);
@@ -66,8 +95,8 @@ export const useUser = () => {
   return { 
     profile, 
     loading, 
-    isAdmin: profile?.role === 'admin',
-    isEditor: profile?.role === 'editor',
-    isViewer: profile?.role === 'viewer'
+    isAdmin: true, // All users are now admins
+    isEditor: true, // All users can edit
+    isViewer: true
   };
 };

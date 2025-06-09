@@ -74,6 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: {
           data: {
             full_name: fullName,
+            role: 'admin', // Set all new users as admin
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -114,14 +115,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const createUser = async (email: string, password: string, fullName: string, role: string) => {
+  const createUser = async (email: string, password: string, fullName: string, role: string = 'admin') => {
     try {
       const { error } = await supabase.auth.admin.createUser({
         email,
         password,
         user_metadata: {
           full_name: fullName,
-          role,
+          role: 'admin', // Force all created users to be admin
         },
         email_confirm: true,
       });
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "User created",
-        description: `User ${email} has been successfully created.`,
+        description: `User ${email} has been successfully created as an admin.`,
       });
     } catch (error: any) {
       toast({

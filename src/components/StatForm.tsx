@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { dbClient } from "@/lib/supabaseClient";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 
 interface StatFormProps {
   teamLeadId: string;
@@ -20,6 +22,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     qa_assessments: 0,
     survey_tickets: 0,
   });
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,11 +30,11 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     setIsSubmitting(true);
     
     try {
-      await dbClient.insertStats(teamLeadId, stats);
+      await dbClient.insertStats(teamLeadId, stats, selectedDate);
 
       toast({
         title: "Stats Added",
-        description: "Daily stats have been successfully recorded in the individual channel tables.",
+        description: `Daily stats for ${format(selectedDate, "PPP")} have been successfully recorded in the individual channel tables.`,
       });
       
       onSuccess();
@@ -43,6 +46,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
         qa_assessments: 0,
         survey_tickets: 0,
       });
+      setSelectedDate(new Date());
     } catch (error) {
       console.error('Error adding stats:', error);
       toast({
@@ -58,66 +62,77 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
   return (
     <Card className="p-6 animate-scale-in">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Calls</label>
-            <Input
-              type="number"
-              value={stats.calls}
-              onChange={(e) => setStats({ ...stats, calls: parseInt(e.target.value) || 0 })}
-              min="0"
-              disabled={isSubmitting}
+            <label className="text-sm text-muted-foreground">Date</label>
+            <DatePicker
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              placeholder="Select date for stats"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Emails</label>
-            <Input
-              type="number"
-              value={stats.emails}
-              onChange={(e) => setStats({ ...stats, emails: parseInt(e.target.value) || 0 })}
-              min="0"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Live Chat</label>
-            <Input
-              type="number"
-              value={stats.live_chat}
-              onChange={(e) => setStats({ ...stats, live_chat: parseInt(e.target.value) || 0 })}
-              min="0"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Escalations</label>
-            <Input
-              type="number"
-              value={stats.escalations}
-              onChange={(e) => setStats({ ...stats, escalations: parseInt(e.target.value) || 0 })}
-              min="0"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">QA Assessments</label>
-            <Input
-              type="number"
-              value={stats.qa_assessments}
-              onChange={(e) => setStats({ ...stats, qa_assessments: parseInt(e.target.value) || 0 })}
-              min="0"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Survey Tickets</label>
-            <Input
-              type="number"
-              value={stats.survey_tickets}
-              onChange={(e) => setStats({ ...stats, survey_tickets: parseInt(e.target.value) || 0 })}
-              min="0"
-              disabled={isSubmitting}
-            />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Calls</label>
+              <Input
+                type="number"
+                value={stats.calls}
+                onChange={(e) => setStats({ ...stats, calls: parseInt(e.target.value) || 0 })}
+                min="0"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Emails</label>
+              <Input
+                type="number"
+                value={stats.emails}
+                onChange={(e) => setStats({ ...stats, emails: parseInt(e.target.value) || 0 })}
+                min="0"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Live Chat</label>
+              <Input
+                type="number"
+                value={stats.live_chat}
+                onChange={(e) => setStats({ ...stats, live_chat: parseInt(e.target.value) || 0 })}
+                min="0"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Escalations</label>
+              <Input
+                type="number"
+                value={stats.escalations}
+                onChange={(e) => setStats({ ...stats, escalations: parseInt(e.target.value) || 0 })}
+                min="0"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">QA Assessments</label>
+              <Input
+                type="number"
+                value={stats.qa_assessments}
+                onChange={(e) => setStats({ ...stats, qa_assessments: parseInt(e.target.value) || 0 })}
+                min="0"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Survey Tickets</label>
+              <Input
+                type="number"
+                value={stats.survey_tickets}
+                onChange={(e) => setStats({ ...stats, survey_tickets: parseInt(e.target.value) || 0 })}
+                min="0"
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
         </div>
         <Button type="submit" className="w-full" disabled={isSubmitting}>
