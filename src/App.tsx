@@ -32,7 +32,7 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* Auth Routes */}
+                {/* Auth Routes - Now inside AuthProvider */}
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
