@@ -146,7 +146,12 @@ export class SupabaseClient {
   }
 
   async insertStats(teamLeadId: string, stats: any, selectedDate?: Date) {
-    const dateToUse = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    // Fix timezone issue by using local date formatting
+    const dateToUse = selectedDate ? 
+      selectedDate.getFullYear() + '-' + 
+      String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(selectedDate.getDate()).padStart(2, '0') : 
+      new Date().toISOString().split('T')[0];
     
     // Get team lead name
     const { data: teamLeadData, error: teamLeadError } = await supabase
@@ -232,6 +237,92 @@ export class SupabaseClient {
     results.forEach(result => {
       if (result.error) throw result.error;
     });
+  }
+
+  // Optimized aggregation using temporary table approach
+  async getAggregatedStats(teamLeadId?: string, startDate?: string, endDate?: string) {
+    try {
+      // First try to use the daily_stats_duplicate table for better performance
+      let query = supabase
+        .from('daily_stats_duplicate')
+        .select('*');
+
+      if (teamLeadId) {
+        query = query.eq('team_lead_id', teamLeadId);
+      }
+
+      if (startDate) {
+        query = query.gte('date', startDate);
+      }
+
+      if (endDate) {
+        query = query.lte('date', endDate);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Daily stats not available, using optimized individual table aggregation');
+      return this.getAggregatedStatsManual(teamLeadId, startDate, endDate);
+    }
+  }
+
+  // Optimized manual aggregation with temporary results map
+  private async getAggregatedStatsManual(teamLeadId?: string, startDate?: string, endDate?: string) {
+    // Create a temporary results map for efficient aggregation
+    const tempResults = new Map<string, any>();
+
+    // Fetch all data in parallel with date filters for better performance
+    const [calls, emails, liveChat, escalations, qaAssessments, surveyTickets] = await Promise.all([
+      this.getCalls(teamLeadId, startDate, endDate),
+      this.getEmails(teamLeadId, startDate, endDate),
+      this.getLiveChat(teamLeadId, startDate, endDate),
+      this.getEscalations(teamLeadId, startDate, endDate),
+      this.getQAAssessments(teamLeadId, startDate, endDate),
+      this.getSurveyTickets(teamLeadId, startDate, endDate),
+    ]);
+
+    // Optimized processing function
+    const processData = (records: any[], dateField: string, countField: string, statType: string) => {
+      records?.forEach(record => {
+        const date = record[dateField];
+        const key = `${date}-${record.team_lead_id || teamLeadId}`;
+        
+        if (!tempResults.has(key)) {
+          tempResults.set(key, {
+            id: `temp-${key}`,
+            team_lead_id: record.team_lead_id || teamLeadId,
+            date: date,
+            calls: 0,
+            emails: 0,
+            live_chat: 0,
+            escalations: 0,
+            qa_assessments: 0,
+            survey_tickets: 0,
+            sla_percentage: 100,
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        const existing = tempResults.get(key);
+        existing[statType] += record[countField] || 0;
+      });
+    };
+
+    // Process all data types efficiently
+    processData(calls, 'Date', 'call_count', 'calls');
+    processData(emails, 'Date', 'email_count', 'emails');
+    processData(liveChat, 'Date', 'chat_count', 'live_chat');
+    processData(escalations, 'Date', 'escalation_count', 'escalations');
+    processData(qaAssessments, 'Date', 'assessment_count', 'qa_assessments');
+    processData(surveyTickets, 'date', 'ticket_count', 'survey_tickets');
+
+    // Convert to array and sort by date
+    return Array.from(tempResults.values()).sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }
 }
 
