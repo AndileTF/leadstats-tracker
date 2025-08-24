@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { DateProvider } from "./context/DateContext";
+import { SessionProvider } from "./context/SessionContext";
 import { NavBar } from "./components/NavBar";
 
 // Pages
@@ -27,7 +28,8 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <DateProvider>
+          <SessionProvider>
+            <DateProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -107,6 +109,7 @@ const App = () => {
               </Routes>
             </BrowserRouter>
           </DateProvider>
+        </SessionProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
