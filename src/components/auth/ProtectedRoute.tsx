@@ -53,8 +53,8 @@ export const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
   
-  // Check for editor or admin access if required (editors and admins can edit content)
-  if (editorOrAdmin && profile?.role !== 'editor' && profile?.role !== 'admin') {
+  // Check for editor or admin access if required (team leads and admins can edit content)
+  if (editorOrAdmin && !profile?.role?.includes('admin') && !profile?.role?.includes('team_lead')) {
     return <Navigate to="/" replace />;
   }
 

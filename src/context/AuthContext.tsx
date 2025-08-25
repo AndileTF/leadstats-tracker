@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: {
           data: {
             full_name: fullName,
-            role: 'admin', // Set all new users as admin
+            role: 'agent', // New users start as agents
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
         user_metadata: {
           full_name: fullName,
-          role: 'admin', // Force all created users to be admin
+          role: role, // Use the provided role
         },
         email_confirm: true,
       });
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "User created",
-        description: `User ${email} has been successfully created as an admin.`,
+        description: `User ${email} has been successfully created with role: ${role}.`,
       });
     } catch (error: any) {
       toast({

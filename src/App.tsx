@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { DateProvider } from "./context/DateContext";
 import { SessionProvider } from "./context/SessionContext";
+import { SessionSecurityWrapper } from "./components/auth/SessionSecurityWrapper";
 import { NavBar } from "./components/NavBar";
 
 // Pages
@@ -29,7 +30,8 @@ const App = () => {
       <TooltipProvider>
         <AuthProvider>
           <SessionProvider>
-            <DateProvider>
+            <SessionSecurityWrapper>
+              <DateProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -107,8 +109,9 @@ const App = () => {
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </DateProvider>
+              </BrowserRouter>
+            </DateProvider>
+          </SessionSecurityWrapper>
         </SessionProvider>
         </AuthProvider>
       </TooltipProvider>
