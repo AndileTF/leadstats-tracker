@@ -21,6 +21,7 @@ import DebugDashboard from "./pages/admin/DebugDashboard";
 import NotFound from "./pages/NotFound";
 import TeamOverview from "./pages/TeamOverview";
 import ProfilePage from "./pages/profile/ProfilePage";
+import AgentPerformancePage from "./pages/AgentPerformancePage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,19 @@ const App = () => {
                       <>
                         <NavBar />
                         <ProfilePage />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Agent Performance Route */}
+                <Route 
+                  path="/agent-performance" 
+                  element={
+                    <ProtectedRoute editorOrAdmin={true}>
+                      <>
+                        <NavBar />
+                        <AgentPerformancePage />
                       </>
                     </ProtectedRoute>
                   } 
