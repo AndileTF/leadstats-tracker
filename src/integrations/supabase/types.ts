@@ -116,6 +116,86 @@ export type Database = {
           },
         ]
       }
+      csr_agent_proflie: {
+        Row: {
+          agent: string | null
+          agentid: string
+          email: string | null
+          profile: string | null
+        }
+        Insert: {
+          agent?: string | null
+          agentid?: string
+          email?: string | null
+          profile?: string | null
+        }
+        Update: {
+          agent?: string | null
+          agentid?: string
+          email?: string | null
+          profile?: string | null
+        }
+        Relationships: []
+      }
+      daily_stats: {
+        Row: {
+          agent: string | null
+          agentid: string
+          "Billing Tickets": string | null
+          calls: number | null
+          date: string | null
+          email: string | null
+          Group: string | null
+          "Live Chat": string | null
+          profile: string | null
+          "Sales Tickets": number | null
+          "Social Tickets": string | null
+          "Support/DNS Emails": string | null
+          "Team Lead Group": string | null
+          "Walk-Ins": string | null
+        }
+        Insert: {
+          agent?: string | null
+          agentid: string
+          "Billing Tickets"?: string | null
+          calls?: number | null
+          date?: string | null
+          email?: string | null
+          Group?: string | null
+          "Live Chat"?: string | null
+          profile?: string | null
+          "Sales Tickets"?: number | null
+          "Social Tickets"?: string | null
+          "Support/DNS Emails"?: string | null
+          "Team Lead Group"?: string | null
+          "Walk-Ins"?: string | null
+        }
+        Update: {
+          agent?: string | null
+          agentid?: string
+          "Billing Tickets"?: string | null
+          calls?: number | null
+          date?: string | null
+          email?: string | null
+          Group?: string | null
+          "Live Chat"?: string | null
+          profile?: string | null
+          "Sales Tickets"?: number | null
+          "Social Tickets"?: string | null
+          "Support/DNS Emails"?: string | null
+          "Team Lead Group"?: string | null
+          "Walk-Ins"?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_agentid_fkey"
+            columns: ["agentid"]
+            isOneToOne: false
+            referencedRelation: "csr_agent_proflie"
+            referencedColumns: ["agentid"]
+          },
+        ]
+      }
       daily_stats_duplicate: {
         Row: {
           calls: number | null
@@ -262,6 +342,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_leads"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile: {
+        Row: {
+          agentid: string | null
+          avatar: string | null
+          contract_type: string | null
+          department: string | null
+          email: string | null
+          Employment_Group: string | null
+          gender: string | null
+          name: string | null
+          post: string | null
+          role: string | null
+          team_lead_name: string | null
+        }
+        Insert: {
+          agentid?: string | null
+          avatar?: string | null
+          contract_type?: string | null
+          department?: string | null
+          email?: string | null
+          Employment_Group?: string | null
+          gender?: string | null
+          name?: string | null
+          post?: string | null
+          role?: string | null
+          team_lead_name?: string | null
+        }
+        Update: {
+          agentid?: string | null
+          avatar?: string | null
+          contract_type?: string | null
+          department?: string | null
+          email?: string | null
+          Employment_Group?: string | null
+          gender?: string | null
+          name?: string | null
+          post?: string | null
+          role?: string | null
+          team_lead_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_agentid_fkey"
+            columns: ["agentid"]
+            isOneToOne: false
+            referencedRelation: "csr_agent_proflie"
+            referencedColumns: ["agentid"]
           },
         ]
       }
