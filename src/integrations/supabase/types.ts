@@ -46,6 +46,68 @@ export type Database = {
           },
         ]
       }
+      agent_performance_metrics: {
+        Row: {
+          agent_id: string
+          avg_response_time: number | null
+          calls: number | null
+          created_at: string
+          customer_satisfaction: number | null
+          date: string
+          emails: number | null
+          escalations: number | null
+          first_call_resolution: number | null
+          id: string
+          live_chat: number | null
+          qa_assessments: number | null
+          tickets_resolved: number | null
+          updated_at: string
+          walk_ins: number | null
+        }
+        Insert: {
+          agent_id: string
+          avg_response_time?: number | null
+          calls?: number | null
+          created_at?: string
+          customer_satisfaction?: number | null
+          date?: string
+          emails?: number | null
+          escalations?: number | null
+          first_call_resolution?: number | null
+          id?: string
+          live_chat?: number | null
+          qa_assessments?: number | null
+          tickets_resolved?: number | null
+          updated_at?: string
+          walk_ins?: number | null
+        }
+        Update: {
+          agent_id?: string
+          avg_response_time?: number | null
+          calls?: number | null
+          created_at?: string
+          customer_satisfaction?: number | null
+          date?: string
+          emails?: number | null
+          escalations?: number | null
+          first_call_resolution?: number | null
+          id?: string
+          live_chat?: number | null
+          qa_assessments?: number | null
+          tickets_resolved?: number | null
+          updated_at?: string
+          walk_ins?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_performance_metrics_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agents: {
         Row: {
           created_at: string | null
@@ -207,8 +269,8 @@ export type Database = {
           live_chat: number | null
           qa_assessments: number | null
           sla_percentage: number
-          survey_tickets: number | null
           team_lead_id: string
+          walk_ins: number | null
         }
         Insert: {
           calls?: number | null
@@ -220,8 +282,8 @@ export type Database = {
           live_chat?: number | null
           qa_assessments?: number | null
           sla_percentage?: number
-          survey_tickets?: number | null
           team_lead_id: string
+          walk_ins?: number | null
         }
         Update: {
           calls?: number | null
@@ -233,8 +295,8 @@ export type Database = {
           live_chat?: number | null
           qa_assessments?: number | null
           sla_percentage?: number
-          survey_tickets?: number | null
           team_lead_id?: string
+          walk_ins?: number | null
         }
         Relationships: [
           {
@@ -513,6 +575,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_agent_performance_rankings: {
+        Args: {
+          end_date_param?: string
+          limit_count?: number
+          start_date_param?: string
+          team_lead_id_param?: string
+        }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          avg_customer_satisfaction: number
+          efficiency_score: number
+          performance_rank: number
+          team_lead_id: string
+          total_calls: number
+          total_emails: number
+          total_escalations: number
+          total_live_chat: number
+          total_qa_assessments: number
+          total_walk_ins: number
+        }[]
+      }
       get_profile_role: {
         Args: { user_id: string }
         Returns: string

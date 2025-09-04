@@ -82,14 +82,14 @@ export const TeamLeadTabs = ({
       live_chat: acc.live_chat + (curr.live_chat || 0),
       escalations: acc.escalations + (curr.escalations || 0),
       qa_assessments: acc.qa_assessments + (curr.qa_assessments || 0),
-      survey_tickets: acc.survey_tickets + (curr.survey_tickets || 0),
+      walk_ins: acc.walk_ins + (curr.walk_ins || 0),
     }), {
       calls: 0,
       emails: 0,
       live_chat: 0,
       escalations: 0,
       qa_assessments: 0,
-      survey_tickets: 0,
+      walk_ins: 0,
     });
   };
 

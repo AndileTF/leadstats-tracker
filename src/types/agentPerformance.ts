@@ -9,7 +9,7 @@ export interface AgentPerformanceMetrics {
   live_chat: number;
   escalations: number;
   qa_assessments: number;
-  survey_tickets: number;
+  walk_ins: number;
   avg_response_time?: number; // in minutes
   customer_satisfaction?: number; // 1-5 scale
   tickets_resolved?: number;
@@ -48,9 +48,24 @@ export interface AgentPerformanceSummary {
   total_live_chat: number;
   total_escalations: number;
   total_qa_assessments: number;
-  total_survey_tickets: number;
+  total_walk_ins: number;
   avg_customer_satisfaction: number;
   efficiency_score: number;
   days_active: number;
   trend: 'up' | 'down' | 'stable';
+}
+
+export interface AgentRanking {
+  agent_id: string;
+  agent_name: string;
+  team_lead_id: string;
+  total_calls: number;
+  total_emails: number;
+  total_live_chat: number;
+  total_escalations: number;
+  total_qa_assessments: number;
+  total_walk_ins: number;
+  avg_customer_satisfaction: number;
+  efficiency_score: number;
+  performance_rank: number;
 }

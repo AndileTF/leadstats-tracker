@@ -7,6 +7,8 @@ import { useDateRange } from '@/context/DateContext';
 import { useAuth } from '@/context/AuthContext';
 import { aggregateDataFromAllTables, AggregatedData } from '@/utils/dataAggregation';
 import { dbClient } from '@/lib/supabaseClient';
+import { TopBottomAgentsList } from '@/components/dashboard/TopBottomAgentsList';
+import { useAgentRankings } from '@/hooks/useAgentRankings';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -16,6 +18,13 @@ const TeamLeadDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { dateRange } = useDateRange();
   const { user } = useAuth();
+
+  // Agent rankings hook
+  const { topAgents, bottomAgents, isLoading: rankingsLoading } = useAgentRankings({
+    teamLeadId: selectedTeamLead || undefined,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
+  });
 
   useEffect(() => {
     fetchTeamLeads();
@@ -94,6 +103,16 @@ const TeamLeadDashboard = () => {
           stats={stats}
           fetchStats={fetchStats}
         />
+        
+        {/* Team Performance Section */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-6">Agent Performance Rankings</h2>
+          <TopBottomAgentsList 
+            topAgents={topAgents}
+            bottomAgents={bottomAgents}
+            isLoading={rankingsLoading}
+          />
+        </div>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     live_chat: 0,
     escalations: 0,
     qa_assessments: 0,
-    survey_tickets: 0,
+    walk_ins: 0,
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +44,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
         live_chat: 0,
         escalations: 0,
         qa_assessments: 0,
-        survey_tickets: 0,
+        walk_ins: 0,
       });
       setSelectedDate(new Date());
     } catch (error) {

@@ -59,7 +59,7 @@ export const useAgentPerformance = (filters: AgentPerformanceFilters) => {
             live_chat: Math.floor(Math.random() * 20) + 3,
             escalations: Math.floor(Math.random() * 5),
             qa_assessments: Math.floor(Math.random() * 3) + 1,
-            survey_tickets: Math.floor(Math.random() * 10) + 2,
+            walk_ins: Math.floor(Math.random() * 10) + 2,
             avg_response_time: Math.floor(Math.random() * 30) + 5,
             customer_satisfaction: Math.random() * 2 + 3, // 3-5 range
             tickets_resolved: Math.floor(Math.random() * 40) + 15,
@@ -103,7 +103,7 @@ export const useAgentPerformance = (filters: AgentPerformanceFilters) => {
           total_live_chat: 0,
           total_escalations: 0,
           total_qa_assessments: 0,
-          total_survey_tickets: 0,
+          total_walk_ins: 0,
           avg_customer_satisfaction: 0,
           efficiency_score: 0,
           days_active: 0,
@@ -117,12 +117,12 @@ export const useAgentPerformance = (filters: AgentPerformanceFilters) => {
         live_chat: acc.live_chat + metric.live_chat,
         escalations: acc.escalations + metric.escalations,
         qa_assessments: acc.qa_assessments + metric.qa_assessments,
-        survey_tickets: acc.survey_tickets + metric.survey_tickets,
+        walk_ins: acc.walk_ins + metric.walk_ins,
         customer_satisfaction: acc.customer_satisfaction + (metric.customer_satisfaction || 0),
         tickets_resolved: acc.tickets_resolved + (metric.tickets_resolved || 0)
       }), {
         calls: 0, emails: 0, live_chat: 0, escalations: 0,
-        qa_assessments: 0, survey_tickets: 0, customer_satisfaction: 0, tickets_resolved: 0
+        qa_assessments: 0, walk_ins: 0, customer_satisfaction: 0, tickets_resolved: 0
       });
       
       const daysActive = agentMetrics.length;
@@ -155,7 +155,7 @@ export const useAgentPerformance = (filters: AgentPerformanceFilters) => {
         total_live_chat: totals.live_chat,
         total_escalations: totals.escalations,
         total_qa_assessments: totals.qa_assessments,
-        total_survey_tickets: totals.survey_tickets,
+        total_walk_ins: totals.walk_ins,
         avg_customer_satisfaction: Number(avgCustomerSat.toFixed(2)),
         efficiency_score: efficiencyScore,
         days_active: daysActive,

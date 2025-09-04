@@ -12,7 +12,7 @@ interface StatsGridProps {
     live_chat: number;
     escalations: number;
     qa_assessments: number;
-    survey_tickets: number;
+    walk_ins: number;
   };
   statsCount: number;
 }
@@ -24,7 +24,7 @@ export const StatsGrid = ({ totalStats, statsCount }: StatsGridProps) => {
     totalStats.live_chat + 
     totalStats.escalations + 
     totalStats.qa_assessments + 
-    totalStats.survey_tickets;
+    totalStats.walk_ins;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
@@ -54,8 +54,8 @@ export const StatsGrid = ({ totalStats, statsCount }: StatsGridProps) => {
         icon={<Shield className="w-5 h-5" />}
       />
       <StatCard
-        title="Survey Tickets"
-        value={totalStats.survey_tickets}
+        title="Walk-ins"
+        value={totalStats.walk_ins}
         icon={<ClipboardList className="w-5 h-5" />}
       />
       <StatCard

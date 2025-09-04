@@ -20,7 +20,7 @@ const METRICS = [
   { key: 'live_chat', name: 'Live Chat', color: '#ffc658' },
   { key: 'escalations', name: 'Escalations', color: '#ff7f0e' },
   { key: 'qa_assessments', name: 'QA Assessments', color: '#2ca02c' },
-  { key: 'survey_tickets', name: 'Survey Tickets', color: '#d62728' },
+  { key: 'walk_ins', name: 'Walk-ins', color: '#d62728' },
 ];
 
 // Base target values per day
@@ -82,9 +82,9 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
         live_chat: stat.live_chat || 0,
         escalations: stat.escalations || 0,
         qa_assessments: stat.qa_assessments || 0,
-        survey_tickets: stat.survey_tickets || 0,
+        walk_ins: stat.walk_ins || 0,
         total: (stat.calls || 0) + (stat.emails || 0) + (stat.live_chat || 0) + 
-               (stat.escalations || 0) + (stat.qa_assessments || 0) + (stat.survey_tickets || 0)
+               (stat.escalations || 0) + (stat.qa_assessments || 0) + (stat.walk_ins || 0)
       }));
     } 
     else if (timeRange === 'weekly') {
@@ -104,7 +104,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
             live_chat: 0,
             escalations: 0,
             qa_assessments: 0,
-            survey_tickets: 0,
+            walk_ins: 0,
             total: 0
           };
         }
@@ -120,7 +120,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
           live_chat: last7Days.reduce((sum, d) => sum + (d.live_chat || 0), 0),
           escalations: last7Days.reduce((sum, d) => sum + (d.escalations || 0), 0),
           qa_assessments: last7Days.reduce((sum, d) => sum + (d.qa_assessments || 0), 0),
-          survey_tickets: last7Days.reduce((sum, d) => sum + (d.survey_tickets || 0), 0),
+          walk_ins: last7Days.reduce((sum, d) => sum + (d.walk_ins || 0), 0),
         };
         
         weeklyData[weekKey].total = 
@@ -129,7 +129,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
           weeklyData[weekKey].live_chat + 
           weeklyData[weekKey].escalations + 
           weeklyData[weekKey].qa_assessments + 
-          weeklyData[weekKey].survey_tickets;
+          weeklyData[weekKey].walk_ins;
       });
       
       formattedData = Object.values(weeklyData);
@@ -151,7 +151,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
             live_chat: 0,
             escalations: 0,
             qa_assessments: 0,
-            survey_tickets: 0,
+            walk_ins: 0,
             total: 0
           };
         }
@@ -167,7 +167,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
           live_chat: last30Days.reduce((sum, d) => sum + (d.live_chat || 0), 0),
           escalations: last30Days.reduce((sum, d) => sum + (d.escalations || 0), 0),
           qa_assessments: last30Days.reduce((sum, d) => sum + (d.qa_assessments || 0), 0),
-          survey_tickets: last30Days.reduce((sum, d) => sum + (d.survey_tickets || 0), 0),
+          walk_ins: last30Days.reduce((sum, d) => sum + (d.walk_ins || 0), 0),
         };
         
         monthlyData[monthKey].total = 
@@ -176,7 +176,7 @@ export const LineChart = ({ data, teamLeadName }: LineChartProps) => {
           monthlyData[monthKey].live_chat + 
           monthlyData[monthKey].escalations + 
           monthlyData[monthKey].qa_assessments + 
-          monthlyData[monthKey].survey_tickets;
+          monthlyData[monthKey].walk_ins;
       });
       
       formattedData = Object.values(monthlyData);
