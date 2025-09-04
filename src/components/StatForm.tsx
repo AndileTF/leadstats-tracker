@@ -124,11 +124,11 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Survey Tickets</label>
+              <label className="text-sm text-muted-foreground">Walk-ins</label>
               <Input
                 type="number"
-                value={stats.survey_tickets}
-                onChange={(e) => setStats({ ...stats, survey_tickets: parseInt(e.target.value) || 0 })}
+                value={stats.walk_ins}
+                onChange={(e) => setStats({ ...stats, walk_ins: parseInt(e.target.value) || 0 })}
                 min="0"
                 disabled={isSubmitting}
               />
