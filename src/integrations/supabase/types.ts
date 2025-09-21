@@ -378,6 +378,207 @@ export type Database = {
           },
         ]
       }
+      leadstats_kpi_records: {
+        Row: {
+          billing_tickets: number | null
+          calls: number | null
+          created_at: string
+          date: string
+          hour_of_day: number | null
+          id: string
+          live_chat: number | null
+          sales_tickets: number | null
+          social_tickets: number | null
+          support_dns_emails: number | null
+          team_id: string
+          total_issues: number | null
+          updated_at: string
+          user_id: string
+          walk_ins: number | null
+        }
+        Insert: {
+          billing_tickets?: number | null
+          calls?: number | null
+          created_at?: string
+          date?: string
+          hour_of_day?: number | null
+          id?: string
+          live_chat?: number | null
+          sales_tickets?: number | null
+          social_tickets?: number | null
+          support_dns_emails?: number | null
+          team_id: string
+          total_issues?: number | null
+          updated_at?: string
+          user_id: string
+          walk_ins?: number | null
+        }
+        Update: {
+          billing_tickets?: number | null
+          calls?: number | null
+          created_at?: string
+          date?: string
+          hour_of_day?: number | null
+          id?: string
+          live_chat?: number | null
+          sales_tickets?: number | null
+          social_tickets?: number | null
+          support_dns_emails?: number | null
+          team_id?: string
+          total_issues?: number | null
+          updated_at?: string
+          user_id?: string
+          walk_ins?: number | null
+        }
+        Relationships: []
+      }
+      leadstats_performance_goals: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          metric_type: string
+          period_type: string
+          start_date: string
+          target_value: number
+          team_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          metric_type: string
+          period_type?: string
+          start_date: string
+          target_value: number
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          metric_type?: string
+          period_type?: string
+          start_date?: string
+          target_value?: number
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      leadstats_qa_scores: {
+        Row: {
+          assessor_id: string | null
+          category: string | null
+          comments: string | null
+          created_at: string
+          date: string
+          id: string
+          score: number
+          team_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessor_id?: string | null
+          category?: string | null
+          comments?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          score: number
+          team_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assessor_id?: string | null
+          category?: string | null
+          comments?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          score?: number
+          team_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      leadstats_teams: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          supervisor_id: string | null
+          team_lead_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          supervisor_id?: string | null
+          team_lead_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          supervisor_id?: string | null
+          team_lead_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      leadstats_users: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          role: string
+          supervisor_id: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: string
+          supervisor_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: string
+          supervisor_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       "Live Chat": {
         Row: {
           chat_count: number | null
