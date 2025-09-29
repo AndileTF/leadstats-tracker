@@ -22,6 +22,8 @@ import NotFound from "./pages/NotFound";
 import TeamOverview from "./pages/TeamOverview";
 import ProfilePage from "./pages/profile/ProfilePage";
 import AgentPerformancePage from "./pages/AgentPerformancePage";
+import TeamLeadsPortal from "./pages/TeamLeadsPortal";
+import ManagementPortal from "./pages/ManagementPortal";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +92,32 @@ const App = () => {
                       <>
                         <NavBar />
                         <TeamLeadDashboard />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Team Leads Portal - For team leads to view their team */}
+                <Route 
+                  path="/team-leads-portal" 
+                  element={
+                    <ProtectedRoute editorOrAdmin={true}>
+                      <>
+                        <NavBar />
+                        <TeamLeadsPortal />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Management Portal - For supervisors and managers */}
+                <Route 
+                  path="/management-portal" 
+                  element={
+                    <ProtectedRoute editorOrAdmin={true}>
+                      <>
+                        <NavBar />
+                        <ManagementPortal />
                       </>
                     </ProtectedRoute>
                   } 

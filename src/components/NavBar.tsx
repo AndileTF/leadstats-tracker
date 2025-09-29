@@ -40,6 +40,8 @@ export const NavBar = () => {
               {(isEditor || isAdmin) && (
                 <>
                   <Link to="/team-lead-dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                  <Link to="/team-leads-portal" className="hover:text-primary transition-colors">Team Portal</Link>
+                  <Link to="/management-portal" className="hover:text-primary transition-colors">Management</Link>
                   <Link to="/agent-performance" className="hover:text-primary transition-colors">Agent Performance</Link>
                 </>
               )}
