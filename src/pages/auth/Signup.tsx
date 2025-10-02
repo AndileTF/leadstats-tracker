@@ -23,7 +23,7 @@ const Signup = () => {
       await signUp(email, password, fullName);
       navigate("/login");
     } catch (error) {
-      console.error(error);
+      // Error handling done in AuthContext
     } finally {
       setIsLoading(false);
     }

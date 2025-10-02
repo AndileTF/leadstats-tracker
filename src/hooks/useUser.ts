@@ -37,38 +37,24 @@ export const useUser = () => {
         }
 
         if (data) {
-          // Update user role to admin if it's not already
-          if (data.role !== 'admin') {
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ role: 'admin' })
-              .eq('id', user.id);
-            
-            if (updateError) {
-              console.error('Error updating user role to admin:', updateError);
-            } else {
-              data.role = 'admin';
-            }
-          }
           setProfile(data);
         } else {
-          // Create a basic profile if none exists, with admin role
+          // Create a basic profile if none exists
           const newProfile = {
             id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || null,
-            role: 'admin',
+            role: 'editor',
             password_changed: true
           };
           
-          // Insert the new profile into the database
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: user.id,
               email: user.email || '',
               full_name: user.user_metadata?.full_name || null,
-              role: 'admin'
+              role: 'editor'
             });
           
           if (insertError) {
@@ -92,11 +78,15 @@ export const useUser = () => {
     fetchProfile();
   }, [user]);
 
+  const isAdmin = profile?.role === 'admin';
+  const isEditor = profile?.role === 'editor' || profile?.role === 'admin';
+  const isViewer = true;
+
   return { 
     profile, 
     loading, 
-    isAdmin: true, // All users are now admins
-    isEditor: true, // All users can edit
-    isViewer: true
+    isAdmin,
+    isEditor,
+    isViewer
   };
 };

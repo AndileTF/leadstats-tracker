@@ -20,19 +20,6 @@ export const ProtectedRoute = ({
   const location = useLocation();
   const navigate = useNavigate();
   
-  // For debugging
-  useEffect(() => {
-    console.log("ProtectedRoute check:", { 
-      user: user?.email, 
-      loading, 
-      adminOnly, 
-      editorOrAdmin,
-      path: location.pathname,
-      forcePasswordChange,
-      isAdmin,
-      role: profile?.role
-    });
-  }, [user, loading, adminOnly, editorOrAdmin, location, forcePasswordChange, isAdmin, profile]);
 
   if (loading || profileLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;

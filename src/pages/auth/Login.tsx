@@ -16,11 +16,9 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // If user is already logged in, redirect them
   useEffect(() => {
     if (user) {
       const from = (location.state as any)?.from || "/";
-      console.log("User already logged in, redirecting to:", from);
       navigate(from, { replace: true });
     }
   }, [user, navigate, location]);
@@ -30,11 +28,8 @@ const Login = () => {
     try {
       setIsLoading(true);
       await signIn(email, password);
-      
-      // Navigation will happen via the useEffect above when user state updates
-      console.log("Login successful");
     } catch (error) {
-      console.error("Login error:", error);
+      // Error handling done in AuthContext
     } finally {
       setIsLoading(false);
     }
