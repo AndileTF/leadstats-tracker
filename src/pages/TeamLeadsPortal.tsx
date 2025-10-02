@@ -96,6 +96,13 @@ const TeamLeadsPortal = () => {
         dateRange.endDate
       );
       setTeamData(data);
+      
+      if (data.length === 0 || data.every(agent => agent.total_issues === 0)) {
+        toast({
+          title: "No Data Found",
+          description: `No performance data available for the selected date range (${dateRange.startDate} to ${dateRange.endDate}). Try selecting a different date range.`,
+        });
+      }
     } catch (error) {
       console.error('Error fetching team data:', error);
       toast({
