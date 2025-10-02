@@ -42,17 +42,46 @@ const TeamLeadsPortal = () => {
   }, [teamLeadId, dateRange]);
 
   const fetchTeamLeadId = async () => {
-    // In a real app, you'd fetch the team_lead_id associated with the authenticated user
-    // For now, we'll get the first team lead (demo purposes)
-    const { data } = await import('@/integrations/supabase/client').then(m => m.supabase
-      .from('team_leads')
-      .select('id')
-      .limit(1)
-      .single()
-    );
+    if (!user?.id) {
+      console.error('No user ID available');
+      return;
+    }
     
-    if (data) {
-      setTeamLeadId(data.id);
+    try {
+      // Get the first team lead for demo purposes
+      const { data, error } = await import('@/integrations/supabase/client').then(m => m.supabase
+        .from('team_leads')
+        .select('id')
+        .limit(1)
+        .maybeSingle()
+      );
+      
+      if (error) {
+        console.error('Error fetching team lead:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch team lead data. Please ensure you're logged in.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data) {
+        setTeamLeadId(data.id);
+      } else {
+        toast({
+          title: "No Team Lead Found",
+          description: "No team lead data available. Please contact your administrator.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -151,6 +180,19 @@ const TeamLeadsPortal = () => {
     </Card>
   );
 
+  if (!user) {
+    return (
+      <div className="min-h-screen p-6 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground">Please log in to access the Team Leads Portal.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (isLoading && !teamData.length) {
     return (
       <div className="min-h-screen p-6">
@@ -162,6 +204,19 @@ const TeamLeadsPortal = () => {
             ))}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && !teamLeadId) {
+    return (
+      <div className="min-h-screen p-6 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold mb-2">No Team Lead Found</h2>
+            <p className="text-muted-foreground">No team lead data available. Please contact your administrator.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
