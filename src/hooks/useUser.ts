@@ -16,7 +16,6 @@ export const useUser = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [userRole, setUserRole] = useState<string>('agent');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -27,55 +26,41 @@ export const useUser = () => {
       }
 
       try {
-        // Get user profile
-        const { data: profileData, error: profileError } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          throw profileError;
+        if (error && error.code !== 'PGRST116') {
+          throw error;
         }
 
-        // Get user roles from the new role system
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id);
-
-        if (rolesError) {
-          console.error('Error fetching user roles:', rolesError);
-        }
-
-        // Determine highest role
-        let highestRole = 'agent';
-        if (rolesData && rolesData.length > 0) {
-          const roles = rolesData.map(r => r.role);
-          if (roles.includes('admin')) {
-            highestRole = 'admin';
-          } else if (roles.includes('team_lead')) {
-            highestRole = 'team_lead';
+        if (data) {
+          // Update user role to admin if it's not already
+          if (data.role !== 'admin') {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'admin' })
+              .eq('id', user.id);
+            
+            if (updateError) {
+              console.error('Error updating user role to admin:', updateError);
+            } else {
+              data.role = 'admin';
+            }
           }
-        }
-
-        setUserRole(highestRole);
-
-        if (profileData) {
-          setProfile({
-            ...profileData,
-            role: highestRole // Override with actual role from user_roles
-          });
+          setProfile(data);
         } else {
-          // Create a basic profile if none exists
+          // Create a basic profile if none exists, with admin role
           const newProfile = {
             id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || null,
-            role: highestRole,
+            role: 'admin',
             password_changed: true
           };
-
+          
           // Insert the new profile into the database
           const { error: insertError } = await supabase
             .from('profiles')
@@ -83,13 +68,13 @@ export const useUser = () => {
               id: user.id,
               email: user.email || '',
               full_name: user.user_metadata?.full_name || null,
-              role: highestRole
+              role: 'admin'
             });
-
+          
           if (insertError) {
             console.error('Error creating user profile:', insertError);
           }
-
+          
           setProfile(newProfile);
         }
       } catch (error: any) {
@@ -110,9 +95,8 @@ export const useUser = () => {
   return { 
     profile, 
     loading, 
-    isAdmin: userRole === 'admin',
-    isTeamLead: userRole === 'team_lead' || userRole === 'admin',
-    isEditor: userRole === 'team_lead' || userRole === 'admin', // Team leads can edit
-    isViewer: true // All users can view
+    isAdmin: true, // All users are now admins
+    isEditor: true, // All users can edit
+    isViewer: true
   };
 };

@@ -15,7 +15,7 @@ export interface DailyStats {
   live_chat: number | null;
   escalations: number | null;
   qa_assessments: number | null;
-  walk_ins: number | null;
+  survey_tickets: number | null;
   sla_percentage?: number | null;
   created_at: string;
 }
@@ -29,7 +29,7 @@ export interface TeamLeadOverview {
   total_live_chat: number | null;
   total_escalations: number | null;
   total_qa_assessments: number | null;
-  total_walk_ins: number | null;
+  total_survey_tickets: number | null;
   average_sla?: number | null;
 }
 

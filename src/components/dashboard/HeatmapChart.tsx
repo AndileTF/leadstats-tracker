@@ -44,7 +44,7 @@ export const HeatmapChart = ({ data, teamLeads }: HeatmapProps) => {
                   (stat.live_chat || 0) + 
                   (stat.escalations || 0) + 
                   (stat.qa_assessments || 0) + 
-                  (stat.walk_ins || 0);
+                  (stat.survey_tickets || 0);
       
       const teamSize = teamLead.assigned_agents_count || AVG_TEAM_SIZE;
       
@@ -144,7 +144,7 @@ export const HeatmapChart = ({ data, teamLeads }: HeatmapProps) => {
               <option value="live_chat">Live Chat</option>
               <option value="escalations">Escalations</option>
               <option value="qa_assessments">QA Assessments</option>
-              <option value="walk_ins">Walk-ins</option>
+              <option value="survey_tickets">Survey Tickets</option>
             </select>
             
             <select

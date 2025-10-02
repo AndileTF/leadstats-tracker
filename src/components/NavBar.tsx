@@ -24,7 +24,7 @@ import {
 
 export const NavBar = () => {
   const { user, signOut } = useAuth();
-  const { profile, isAdmin, isEditor } = useUser();
+  const { profile, isAdmin } = useUser();
 
   return (
     <header className="bg-card/80 backdrop-blur-md border-b border-white/10 shadow-lg px-6 py-4">
@@ -33,21 +33,7 @@ export const NavBar = () => {
           <span className="liquid-text">LIQUID</span> Dashboard
         </Link>
 
-        <div className="flex items-center gap-6">
-          {user && (
-            <nav className="hidden md:flex items-center gap-4">
-              <Link to="/" className="hover:text-primary transition-colors">Team Overview</Link>
-              {(isEditor || isAdmin) && (
-                <>
-                  <Link to="/team-lead-dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
-                  <Link to="/team-leads-portal" className="hover:text-primary transition-colors">Team Portal</Link>
-                  <Link to="/management-portal" className="hover:text-primary transition-colors">Management</Link>
-                  <Link to="/agent-performance" className="hover:text-primary transition-colors">Agent Performance</Link>
-                </>
-              )}
-            </nav>
-          )}
-          
+        <div className="flex items-center gap-4">
           {user ? (
             <>
               <Button variant="ghost" asChild>

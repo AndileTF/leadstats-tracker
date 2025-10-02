@@ -20,7 +20,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
     live_chat: 0,
     escalations: 0,
     qa_assessments: 0,
-    walk_ins: 0,
+    survey_tickets: 0,
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +44,7 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
         live_chat: 0,
         escalations: 0,
         qa_assessments: 0,
-        walk_ins: 0,
+        survey_tickets: 0,
       });
       setSelectedDate(new Date());
     } catch (error) {
@@ -124,11 +124,11 @@ export const StatForm = ({ teamLeadId, onSuccess }: StatFormProps) => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Walk-ins</label>
+              <label className="text-sm text-muted-foreground">Survey Tickets</label>
               <Input
                 type="number"
-                value={stats.walk_ins}
-                onChange={(e) => setStats({ ...stats, walk_ins: parseInt(e.target.value) || 0 })}
+                value={stats.survey_tickets}
+                onChange={(e) => setStats({ ...stats, survey_tickets: parseInt(e.target.value) || 0 })}
                 min="0"
                 disabled={isSubmitting}
               />

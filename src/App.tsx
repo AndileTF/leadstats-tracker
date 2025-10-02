@@ -8,8 +8,6 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { DateProvider } from "./context/DateContext";
-import { SessionProvider } from "./context/SessionContext";
-import { SessionSecurityWrapper } from "./components/auth/SessionSecurityWrapper";
 import { NavBar } from "./components/NavBar";
 
 // Pages
@@ -21,9 +19,6 @@ import DebugDashboard from "./pages/admin/DebugDashboard";
 import NotFound from "./pages/NotFound";
 import TeamOverview from "./pages/TeamOverview";
 import ProfilePage from "./pages/profile/ProfilePage";
-import AgentPerformancePage from "./pages/AgentPerformancePage";
-import TeamLeadsPortal from "./pages/TeamLeadsPortal";
-import ManagementPortal from "./pages/ManagementPortal";
 
 const queryClient = new QueryClient();
 
@@ -32,9 +27,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <SessionProvider>
-            <SessionSecurityWrapper>
-              <DateProvider>
+          <DateProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -71,19 +64,6 @@ const App = () => {
                   } 
                 />
                 
-                {/* Agent Performance Route */}
-                <Route 
-                  path="/agent-performance" 
-                  element={
-                    <ProtectedRoute editorOrAdmin={true}>
-                      <>
-                        <NavBar />
-                        <AgentPerformancePage />
-                      </>
-                    </ProtectedRoute>
-                  } 
-                />
-                
                 {/* Team Lead Dashboard Route - Accessible by editors and admins */}
                 <Route 
                   path="/team-lead-dashboard" 
@@ -92,32 +72,6 @@ const App = () => {
                       <>
                         <NavBar />
                         <TeamLeadDashboard />
-                      </>
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Team Leads Portal - For team leads to view their team */}
-                <Route 
-                  path="/team-leads-portal" 
-                  element={
-                    <ProtectedRoute editorOrAdmin={true}>
-                      <>
-                        <NavBar />
-                        <TeamLeadsPortal />
-                      </>
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Management Portal - For supervisors and managers */}
-                <Route 
-                  path="/management-portal" 
-                  element={
-                    <ProtectedRoute editorOrAdmin={true}>
-                      <>
-                        <NavBar />
-                        <ManagementPortal />
                       </>
                     </ProtectedRoute>
                   } 
@@ -151,10 +105,8 @@ const App = () => {
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              </BrowserRouter>
-            </DateProvider>
-          </SessionSecurityWrapper>
-        </SessionProvider>
+            </BrowserRouter>
+          </DateProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

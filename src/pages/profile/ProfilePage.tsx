@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbClient } from '@/lib/supabaseClient';
 import { Eye, EyeOff, Edit } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -54,21 +54,12 @@ const ProfilePage = () => {
     try {
       setIsChangingPassword(true);
 
-      // Update password using Supabase Auth API
-      const { error: authError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (authError) throw authError;
-
-      // Update password_changed flag in profiles
+      // Update password in local database
       if (user?.id) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ password_changed: true })
-          .eq('id', user.id);
-        
-        if (profileError) throw profileError;
+        await dbClient.executeQuery(
+          'UPDATE profiles SET password_changed = $1 WHERE id = $2',
+          [true, user.id]
+        );
       }
 
       toast({
@@ -99,12 +90,10 @@ const ProfilePage = () => {
     try {
       setIsUpdatingName(true);
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName })
-        .eq('id', user.id);
-      
-      if (error) throw error;
+      await dbClient.executeQuery(
+        'UPDATE profiles SET full_name = $1 WHERE id = $2',
+        [fullName, user.id]
+      );
 
       toast({
         title: "Name updated",

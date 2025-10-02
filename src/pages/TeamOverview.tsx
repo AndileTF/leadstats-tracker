@@ -17,27 +17,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
 import { aggregateDataFromAllTables, AggregatedData } from "@/utils/dataAggregation";
 import { dbClient } from "@/lib/supabaseClient";
-import { useStatsStore } from '@/store/statsStore';
-import { useRealtimeStats } from '@/hooks/useRealtimeStats';
 
 const TeamOverview = () => {
-  // Use Zustand store for state management
-  const {
-    teamLeads,
-    teamOverview: overview,
-    dailyStats,
-    selectedTeamLead,
-    dateRange,
-    isLoadingOverview: isLoading,
-    setTeamLeads,
-    setTeamOverview: setOverview,
-    setDailyStats,
-    setSelectedTeamLead,
-    setLoadingOverview: setIsLoading
-  } = useStatsStore();
-  
-  // Set up real-time updates
-  useRealtimeStats();
+  const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { dateRange } = useDateRange();
+  const [dailyStats, setDailyStats] = useState<AggregatedData[]>([]);
+  const [teamLeads, setTeamLeads] = useState<TeamLead[]>([]);
+  const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   
   useEffect(() => {
     fetchTeamLeads();
@@ -87,7 +74,7 @@ const TeamOverview = () => {
             total_live_chat: acc.total_live_chat + (stat.live_chat || 0),
             total_escalations: acc.total_escalations + (stat.escalations || 0),
             total_qa_assessments: acc.total_qa_assessments + (stat.qa_assessments || 0),
-            total_walk_ins: acc.total_walk_ins + (stat.walk_ins || 0),
+            total_survey_tickets: acc.total_survey_tickets + (stat.survey_tickets || 0),
             total_days: acc.total_days + 1,
             average_sla: acc.average_sla + (stat.sla_percentage || 0)
           }), {
@@ -96,7 +83,7 @@ const TeamOverview = () => {
             total_live_chat: 0,
             total_escalations: 0,
             total_qa_assessments: 0,
-            total_walk_ins: 0,
+            total_survey_tickets: 0,
             total_days: 0,
             average_sla: 0
           });
@@ -117,7 +104,7 @@ const TeamOverview = () => {
             total_live_chat: 0,
             total_escalations: 0,
             total_qa_assessments: 0,
-            total_walk_ins: 0,
+            total_survey_tickets: 0,
             total_days: 0,
             average_sla: 0
           };

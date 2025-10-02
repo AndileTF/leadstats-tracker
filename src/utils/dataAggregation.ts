@@ -9,7 +9,7 @@ export interface AggregatedData {
   live_chat: number;
   escalations: number;
   qa_assessments: number;
-  walk_ins: number;
+  survey_tickets: number;
   sla_percentage: number;
   created_at: string;
 }
