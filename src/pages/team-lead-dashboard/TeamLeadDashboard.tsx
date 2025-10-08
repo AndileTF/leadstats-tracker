@@ -7,6 +7,10 @@ import { useDateRange } from '@/context/DateContext';
 import { useAuth } from '@/context/AuthContext';
 import { aggregateDataFromAllTables, AggregatedData } from '@/utils/dataAggregation';
 import { dbClient } from '@/lib/supabaseClient';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { AgentPerformanceTable } from '@/components/dashboard/AgentPerformanceTable';
+import { useAgentPerformance } from '@/hooks/useAgentPerformance';
 
 const TeamLeadDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -73,6 +77,15 @@ const TeamLeadDashboard = () => {
     }
   };
 
+  const {
+    data: agentPerformanceData,
+    loading: agentLoading,
+  } = useAgentPerformance({
+    teamLeadId: selectedTeamLead || undefined,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
+  });
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -86,14 +99,30 @@ const TeamLeadDashboard = () => {
           onApplyFilter={fetchStats}
         />
         
-        <DashboardContent
-          teamLeads={teamLeads}
-          selectedTeamLead={selectedTeamLead}
-          setSelectedTeamLead={setSelectedTeamLead}
-          showForm={showForm}
-          stats={stats}
-          fetchStats={fetchStats}
-        />
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview">Team Overview</TabsTrigger>
+            <TabsTrigger value="agents">Agent Performance</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
+            <DashboardContent
+              teamLeads={teamLeads}
+              selectedTeamLead={selectedTeamLead}
+              setSelectedTeamLead={setSelectedTeamLead}
+              showForm={showForm}
+              stats={stats}
+              fetchStats={fetchStats}
+            />
+          </TabsContent>
+
+          <TabsContent value="agents">
+            <AgentPerformanceTable 
+              data={agentPerformanceData} 
+              loading={agentLoading}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

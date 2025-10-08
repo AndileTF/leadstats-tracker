@@ -40,7 +40,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Handle tab/window close - clear session for security
+    const handleBeforeUnload = () => {
+      // For increased security, you can optionally invalidate the session
+      // Note: This is optional based on security requirements
+      sessionStorage.removeItem('supabase.auth.token');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

@@ -378,6 +378,42 @@ export type Database = {
           },
         ]
       }
+      import_history: {
+        Row: {
+          can_rollback: boolean | null
+          created_at: string
+          file_path: string | null
+          filename: string
+          id: string
+          import_date: string
+          imported_by: string | null
+          rows_imported: number
+          status: string
+        }
+        Insert: {
+          can_rollback?: boolean | null
+          created_at?: string
+          file_path?: string | null
+          filename: string
+          id?: string
+          import_date?: string
+          imported_by?: string | null
+          rows_imported?: number
+          status?: string
+        }
+        Update: {
+          can_rollback?: boolean | null
+          created_at?: string
+          file_path?: string | null
+          filename?: string
+          id?: string
+          import_date?: string
+          imported_by?: string | null
+          rows_imported?: number
+          status?: string
+        }
+        Relationships: []
+      }
       leadstats_kpi_records: {
         Row: {
           billing_tickets: number | null
@@ -725,6 +761,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      servicenow_sync_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          records_synced: number | null
+          status: string
+          sync_date: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          records_synced?: number | null
+          status: string
+          sync_date?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          records_synced?: number | null
+          status?: string
+          sync_date?: string
+        }
+        Relationships: []
       }
       team_leads: {
         Row: {

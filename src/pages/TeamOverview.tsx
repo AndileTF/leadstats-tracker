@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDateRange } from "@/context/DateContext";
 import { aggregateDataFromAllTables, AggregatedData } from "@/utils/dataAggregation";
 import { dbClient } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 const TeamOverview = () => {
   const [overview, setOverview] = useState<TeamLeadOverview[]>([]);
@@ -30,6 +31,28 @@ const TeamOverview = () => {
     fetchTeamLeads();
     fetchOverview();
     fetchDailyStats();
+
+    // Set up real-time subscription for stats updates
+    const channel = supabase
+      .channel('team-overview-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_stats_duplicate',
+        },
+        () => {
+          // Refetch data when changes occur
+          fetchOverview();
+          fetchDailyStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [dateRange]);
 
   const fetchTeamLeads = async () => {

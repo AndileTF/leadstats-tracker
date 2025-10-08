@@ -3,12 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { DateProvider } from "./context/DateContext";
 import { NavBar } from "./components/NavBar";
+import { useIdleTimer } from "./hooks/useIdleTimer";
+import { IdleWarningDialog } from "./components/auth/IdleWarningDialog";
 
 // Pages
 import Login from "./pages/auth/Login";
@@ -16,22 +18,42 @@ import Signup from "./pages/auth/Signup";
 import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import DebugDashboard from "./pages/admin/DebugDashboard";
+import ServiceNowSettings from "./pages/admin/ServiceNowSettings";
 import NotFound from "./pages/NotFound";
 import TeamOverview from "./pages/TeamOverview";
 import ProfilePage from "./pages/profile/ProfilePage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      staleTime: 1000 * 60, // 1 minute
+    },
+  },
+});
 
-const App = () => {
+const AppContent = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // Idle timeout: 30 minutes with 5-minute warning
+  const { showWarning, remainingTime, resetTimer } = useIdleTimer({
+    timeout: 30 * 60 * 1000, // 30 minutes
+    warningTime: 5 * 60 * 1000, // 5 minutes
+    onIdle: async () => {
+      await signOut();
+      navigate('/login');
+    },
+  });
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <DateProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
+    <>
+      <IdleWarningDialog
+        open={showWarning}
+        remainingTime={remainingTime}
+        onContinue={resetTimer}
+      />
+      <Routes>
                 {/* Auth Routes - Now inside AuthProvider */}
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<Login />} />
@@ -102,9 +124,35 @@ const App = () => {
                   } 
                 />
                 
+                <Route 
+                  path="/admin/servicenow" 
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <>
+                        <NavBar />
+                        <ServiceNowSettings />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+                
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <DateProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
             </BrowserRouter>
           </DateProvider>
         </AuthProvider>
