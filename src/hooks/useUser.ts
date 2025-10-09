@@ -8,43 +8,46 @@ type UserProfile = {
   id: string;
   email: string;
   full_name: string | null;
-  role: string;
   password_changed: boolean | null;
 };
+
+type AppRole = 'admin' | 'team_lead' | 'agent';
 
 export const useUser = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) {
         setProfile(null);
+        setRoles([]);
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        // Fetch profile
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, full_name, password_changed')
           .eq('id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') {
-          throw error;
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError;
         }
 
-        if (data) {
-          setProfile(data);
+        if (profileData) {
+          setProfile(profileData);
         } else {
           // Create a basic profile if none exists
           const newProfile = {
             id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || null,
-            role: 'editor',
             password_changed: true
           };
           
@@ -54,7 +57,6 @@ export const useUser = () => {
               id: user.id,
               email: user.email || '',
               full_name: user.user_metadata?.full_name || null,
-              role: 'editor'
             });
           
           if (insertError) {
@@ -62,6 +64,18 @@ export const useUser = () => {
           }
           
           setProfile(newProfile);
+        }
+
+        // Fetch roles from user_roles table
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+
+        if (rolesError) {
+          console.error('Error fetching user roles:', rolesError);
+        } else {
+          setRoles(rolesData?.map(r => r.role as AppRole) || []);
         }
       } catch (error: any) {
         console.error("Error loading user data:", error);
@@ -78,12 +92,13 @@ export const useUser = () => {
     fetchProfile();
   }, [user]);
 
-  const isAdmin = profile?.role === 'admin';
-  const isEditor = profile?.role === 'editor' || profile?.role === 'admin';
+  const isAdmin = roles.includes('admin');
+  const isEditor = roles.includes('admin') || roles.includes('team_lead');
   const isViewer = true;
 
   return { 
     profile, 
+    roles,
     loading, 
     isAdmin,
     isEditor,

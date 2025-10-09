@@ -16,9 +16,8 @@ export const ProtectedRoute = ({
   editorOrAdmin = false
 }: ProtectedRouteProps) => {
   const { user, loading, forcePasswordChange } = useAuth();
-  const { profile, loading: profileLoading, isAdmin } = useUser();
+  const { roles, loading: profileLoading, isAdmin, isEditor } = useUser();
   const location = useLocation();
-  const navigate = useNavigate();
   
 
   if (loading || profileLoading) {
@@ -26,7 +25,6 @@ export const ProtectedRoute = ({
   }
 
   if (!user) {
-    // Use Navigate component instead of imperative navigation
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
@@ -40,8 +38,8 @@ export const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
   
-  // Check for editor or admin access if required (editors and admins can edit content)
-  if (editorOrAdmin && profile?.role !== 'editor' && profile?.role !== 'admin') {
+  // Check for editor or admin access if required using user_roles table
+  if (editorOrAdmin && !isEditor) {
     return <Navigate to="/" replace />;
   }
 

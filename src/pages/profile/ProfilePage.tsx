@@ -12,7 +12,7 @@ import { Eye, EyeOff, Edit } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, forcePasswordChange } = useAuth();
-  const { profile, loading: profileLoading } = useUser();
+  const { profile, roles, loading: profileLoading } = useUser();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -135,7 +135,7 @@ const ProfilePage = () => {
           
           <div className="space-y-2">
             <Label>Role</Label>
-            <Input value={profile?.role || 'viewer'} disabled />
+            <Input value={roles.length > 0 ? roles.join(', ') : 'No roles assigned'} disabled />
           </div>
 
           <div className="space-y-2">
