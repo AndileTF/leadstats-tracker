@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 
 // Define valid table names as a type
-type ValidTableName = "profiles" | "team_leads" | "agents" | "daily_stats_duplicate" | "Calls" | "Emails" | "Escalations" | "Live Chat" | "QA Table" | "After Call Survey Tickets";
+type ValidTableName = "profiles" | "team_leads" | "agents" | "daily_stats_duplicate" | "agent_performance_metrics" | "user_roles" | "import_history" | "servicenow_sync_log";
 
 const DebugDashboard = () => {
   const [tables, setTables] = useState<string[]>([]);
@@ -43,12 +43,10 @@ const DebugDashboard = () => {
     "team_leads", 
     "agents",
     "daily_stats_duplicate",
-    "Calls",
-    "Emails",
-    "Escalations",
-    "Live Chat",
-    "QA Table",
-    "After Call Survey Tickets"
+    "agent_performance_metrics",
+    "user_roles",
+    "import_history",
+    "servicenow_sync_log"
   ];
 
   // Helper function to check if a table name is valid
