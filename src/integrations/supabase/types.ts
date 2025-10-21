@@ -278,6 +278,7 @@ export type Database = {
           password_changed: boolean | null
           role: string
           status: string
+          team_lead_id: string | null
           updated_at: string
         }
         Insert: {
@@ -288,6 +289,7 @@ export type Database = {
           password_changed?: boolean | null
           role?: string
           status?: string
+          team_lead_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -298,9 +300,18 @@ export type Database = {
           password_changed?: boolean | null
           role?: string
           status?: string
+          team_lead_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "team_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servicenow_sync_log: {
         Row: {

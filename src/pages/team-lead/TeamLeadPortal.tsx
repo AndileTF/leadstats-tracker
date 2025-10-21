@@ -34,33 +34,35 @@ const TeamLeadPortal = () => {
     if (!user) return;
 
     try {
-      // Get the team lead record for the current user
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (rolesError) throw rolesError;
-
-      // Get profile to find team lead name
+      // Get profile with team_lead_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('team_lead_id')
         .eq('id', user.id)
         .single();
 
       if (profileError) throw profileError;
 
-      // Find team lead by name
+      if (!profile.team_lead_id) {
+        toast({
+          title: "Profile Not Linked",
+          description: "Your profile is not linked to a team lead. Please contact an administrator.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Get the team lead details
       const { data: teamLeadData, error: teamLeadError } = await supabase
         .from('team_leads')
         .select('*')
-        .eq('name', profile.full_name)
+        .eq('id', profile.team_lead_id)
         .single();
 
       if (teamLeadError) throw teamLeadError;
 
+      console.log('Fetched team lead info:', teamLeadData);
       setTeamLead(teamLeadData);
     } catch (error) {
       console.error('Error fetching team lead info:', error);
