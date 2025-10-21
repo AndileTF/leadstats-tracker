@@ -11,6 +11,7 @@ import { DateProvider } from "./context/DateContext";
 import { NavBar } from "./components/NavBar";
 import { useIdleTimer } from "./hooks/useIdleTimer";
 import { IdleWarningDialog } from "./components/auth/IdleWarningDialog";
+import { RoleBasedRedirect } from "./components/RoleBasedRedirect";
 
 // Pages
 import Login from "./pages/auth/Login";
@@ -68,7 +69,7 @@ const AppContent = () => {
                     <ProtectedRoute>
                       <>
                         <NavBar />
-                        <TeamOverview />
+                        <RoleBasedRedirect />
                       </>
                     </ProtectedRoute>
                   } 
@@ -107,7 +108,7 @@ const AppContent = () => {
                     <ProtectedRoute adminOnly={true}>
                       <>
                         <NavBar />
-                        <TeamLeadDashboard />
+                        <TeamOverview />
                       </>
                     </ProtectedRoute>
                   } 
