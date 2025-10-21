@@ -58,7 +58,7 @@ export const NavBar = () => {
 
               {isAdmin && (
                 <Button variant="ghost" asChild>
-                  <Link to="/team-lead-dashboard" className="text-sm flex items-center gap-2">
+                  <Link to="/management-dashboard" className="text-sm flex items-center gap-2">
                     <BarChart3 className="h-4 w-4" />
                     <span className="hidden md:inline">Management</span>
                   </Link>

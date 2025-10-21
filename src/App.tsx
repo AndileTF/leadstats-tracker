@@ -102,7 +102,7 @@ const AppContent = () => {
 
                 {/* Management Dashboard Route - Accessible by admins only */}
                 <Route 
-                  path="/team-lead-dashboard" 
+                  path="/management-dashboard" 
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <>
