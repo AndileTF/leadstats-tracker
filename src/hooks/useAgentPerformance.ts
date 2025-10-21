@@ -63,16 +63,18 @@ export const useAgentPerformance = ({
       setLoading(true);
       setError(null);
 
-      // First, get team lead name if teamLeadId is provided
-      let teamLeadName: string | null = null;
+      // Fetch all agents with their team lead info
+      let agentsQuery = supabase
+        .from('agents')
+        .select('id, name, team_lead_id, team_leads(name)');
+
+      // Filter by team lead if specified
       if (teamLeadId) {
-        const { data: teamLeadData } = await supabase
-          .from('team_leads')
-          .select('name')
-          .eq('id', teamLeadId)
-          .single();
-        teamLeadName = teamLeadData?.name || null;
+        agentsQuery = agentsQuery.eq('team_lead_id', teamLeadId);
       }
+
+      const { data: agentsData, error: agentsError } = await agentsQuery;
+      if (agentsError) throw agentsError;
 
       // Fetch from csr_daily table
       let query = supabase
@@ -80,21 +82,31 @@ export const useAgentPerformance = ({
         .select('*');
 
       const { data: dailyData, error: dailyError } = await query;
-
       if (dailyError) throw dailyError;
+
+      // Create a map of agent names to agent IDs and team leads
+      const agentNameMap = new Map<string, { id: string; team_lead_id: string; team_lead_name: string }>();
+      agentsData?.forEach((agent) => {
+        agentNameMap.set(agent.name, {
+          id: agent.id,
+          team_lead_id: agent.team_lead_id || '',
+          team_lead_name: (agent.team_leads as any)?.name || '',
+        });
+      });
 
       // Aggregate data by agent
       const agentMap = new Map<string, AgentPerformance>();
       
       dailyData?.forEach((record) => {
-        const agentId = record.agentid || '';
         const agentName = record.Agent || 'Unknown';
-        const teamLeadGroup = record['Team Lead Group'] || '';
-        const teamName = record.Group || '';
         const recordDate = record.Date || '';
         
-        // Filter by team lead name if specified
-        if (teamLeadName && teamLeadGroup !== teamLeadName) {
+        // Get agent info from agents table
+        const agentInfo = agentNameMap.get(agentName);
+        if (!agentInfo) return; // Skip if agent not in agents table
+
+        // Filter by team lead if specified
+        if (teamLeadId && agentInfo.team_lead_id !== teamLeadId) {
           return;
         }
 
@@ -106,12 +118,14 @@ export const useAgentPerformance = ({
           return;
         }
         
+        const agentId = agentInfo.id;
+        
         if (!agentMap.has(agentId)) {
           agentMap.set(agentId, {
             agent_id: agentId,
             agent_name: agentName,
-            team_lead_id: teamLeadGroup,
-            team_name: teamName,
+            team_lead_id: agentInfo.team_lead_id,
+            team_name: agentInfo.team_lead_name,
             total_calls: 0,
             total_emails: 0,
             total_live_chat: 0,
