@@ -63,18 +63,21 @@ export const useAgentPerformance = ({
       setLoading(true);
       setError(null);
 
-      // Fetch from csr_daily table and aggregate by agent
+      // First, get team lead name if teamLeadId is provided
+      let teamLeadName: string | null = null;
+      if (teamLeadId) {
+        const { data: teamLeadData } = await supabase
+          .from('team_leads')
+          .select('name')
+          .eq('id', teamLeadId)
+          .single();
+        teamLeadName = teamLeadData?.name || null;
+      }
+
+      // Fetch from csr_daily table
       let query = supabase
         .from('csr_daily')
         .select('*');
-
-      // Apply date filters if provided
-      if (startDate) {
-        query = query.gte('Date', startDate);
-      }
-      if (endDate) {
-        query = query.lte('Date', endDate);
-      }
 
       const { data: dailyData, error: dailyError } = await query;
 
@@ -88,9 +91,18 @@ export const useAgentPerformance = ({
         const agentName = record.Agent || 'Unknown';
         const teamLeadGroup = record['Team Lead Group'] || '';
         const teamName = record.Group || '';
+        const recordDate = record.Date || '';
         
-        // Filter by team lead if specified
-        if (teamLeadId && teamLeadGroup !== teamLeadId) {
+        // Filter by team lead name if specified
+        if (teamLeadName && teamLeadGroup !== teamLeadName) {
+          return;
+        }
+
+        // Filter by date range
+        if (startDate && recordDate < startDate) {
+          return;
+        }
+        if (endDate && recordDate > endDate) {
           return;
         }
         
