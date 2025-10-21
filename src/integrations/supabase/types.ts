@@ -111,6 +111,78 @@ export type Database = {
           },
         ]
       }
+      csr_agents: {
+        Row: {
+          Agent: string | null
+          agentid: string | null
+          Email: string | null
+          Profile: string | null
+        }
+        Insert: {
+          Agent?: string | null
+          agentid?: string | null
+          Email?: string | null
+          Profile?: string | null
+        }
+        Update: {
+          Agent?: string | null
+          agentid?: string | null
+          Email?: string | null
+          Profile?: string | null
+        }
+        Relationships: []
+      }
+      csr_daily: {
+        Row: {
+          Agent: string | null
+          agentid: string | null
+          "Billing Tickets": string | null
+          Calls: string | null
+          Date: string | null
+          Email: string | null
+          Group: string | null
+          "Live Chat": string | null
+          Profile: string | null
+          "Sales Tickets": string | null
+          "Social Tickets": string | null
+          "Support/DNS Emails": string | null
+          "Team Lead Group": string | null
+          "Walk-Ins": string | null
+        }
+        Insert: {
+          Agent?: string | null
+          agentid?: string | null
+          "Billing Tickets"?: string | null
+          Calls?: string | null
+          Date?: string | null
+          Email?: string | null
+          Group?: string | null
+          "Live Chat"?: string | null
+          Profile?: string | null
+          "Sales Tickets"?: string | null
+          "Social Tickets"?: string | null
+          "Support/DNS Emails"?: string | null
+          "Team Lead Group"?: string | null
+          "Walk-Ins"?: string | null
+        }
+        Update: {
+          Agent?: string | null
+          agentid?: string | null
+          "Billing Tickets"?: string | null
+          Calls?: string | null
+          Date?: string | null
+          Email?: string | null
+          Group?: string | null
+          "Live Chat"?: string | null
+          Profile?: string | null
+          "Sales Tickets"?: string | null
+          "Social Tickets"?: string | null
+          "Support/DNS Emails"?: string | null
+          "Team Lead Group"?: string | null
+          "Walk-Ins"?: string | null
+        }
+        Relationships: []
+      }
       daily_stats_duplicate: {
         Row: {
           calls: number | null
