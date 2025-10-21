@@ -10,8 +10,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, TrendingUp, TrendingDown, Award } from 'lucide-react';
+import { Search, Award } from 'lucide-react';
 import { AgentPerformance } from '@/hooks/useAgentPerformance';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface AgentPerformanceTableProps {
   data: AgentPerformance[];
@@ -60,18 +61,33 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
     return filtered;
   }, [data, searchTerm, sortField, sortDirection]);
 
+  const chartData = useMemo(() => {
+    // Group agents by team
+    const teamGroups = new Map<string, { team: string; agents: AgentPerformance[] }>();
+    
+    filteredAndSortedData.forEach((agent) => {
+      const teamName = agent.team_name || 'Unknown Team';
+      if (!teamGroups.has(teamName)) {
+        teamGroups.set(teamName, { team: teamName, agents: [] });
+      }
+      teamGroups.get(teamName)!.agents.push(agent);
+    });
+
+    // Convert to chart format
+    return Array.from(teamGroups.values()).map((group) => {
+      const chartEntry: any = { team: group.team };
+      group.agents.forEach((agent) => {
+        chartEntry[agent.agent_name] = agent.total_issues;
+      });
+      return chartEntry;
+    });
+  }, [filteredAndSortedData]);
+
   const getRankBadge = (rank: number) => {
     if (rank === 1) return <Badge className="bg-yellow-500"><Award className="h-3 w-3 mr-1" />1st</Badge>;
     if (rank === 2) return <Badge className="bg-gray-400">2nd</Badge>;
     if (rank === 3) return <Badge className="bg-orange-600">3rd</Badge>;
     return <Badge variant="outline">{rank}th</Badge>;
-  };
-
-  const getEfficiencyBadge = (score: number) => {
-    if (score >= 0.8) return <Badge className="bg-green-600 flex items-center gap-1"><TrendingUp className="h-3 w-3" />Excellent</Badge>;
-    if (score >= 0.6) return <Badge className="bg-blue-600">Good</Badge>;
-    if (score >= 0.4) return <Badge className="bg-yellow-600">Average</Badge>;
-    return <Badge className="bg-red-600 flex items-center gap-1"><TrendingDown className="h-3 w-3" />Needs Improvement</Badge>;
   };
 
   if (loading) {
@@ -87,110 +103,132 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Agent Performance Rankings</CardTitle>
-        <CardDescription>
-          Comprehensive performance metrics for all team agents
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search agents by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+    <>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Team Performance Overview</CardTitle>
+          <CardDescription>
+            Total issues handled by agents grouped by team
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="team" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              {filteredAndSortedData.map((agent, index) => (
+                <Bar 
+                  key={agent.agent_id} 
+                  dataKey={agent.agent_name} 
+                  fill={`hsl(${(index * 360) / filteredAndSortedData.length}, 70%, 50%)`} 
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('performance_rank')}
-                >
-                  Rank
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('agent_name')}
-                >
-                  Agent Name
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_calls')}
-                >
-                  Calls
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_emails')}
-                >
-                  Emails
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_live_chat')}
-                >
-                  Live Chat
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_escalations')}
-                >
-                  Escalations
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_qa_assessments')}
-                >
-                  QA Assessments
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('avg_customer_satisfaction')}
-                >
-                  Satisfaction
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('efficiency_score')}
-                >
-                  Efficiency
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedData.length === 0 ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent Performance Rankings</CardTitle>
+          <CardDescription>
+            Comprehensive performance metrics for all team agents
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search agents by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No agent performance data available
-                  </TableCell>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('performance_rank')}
+                  >
+                    Rank
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('agent_name')}
+                  >
+                    Agent Name
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('team_name')}
+                  >
+                    Team
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 text-right"
+                    onClick={() => handleSort('total_calls')}
+                  >
+                    Calls
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 text-right"
+                    onClick={() => handleSort('total_emails')}
+                  >
+                    Emails
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 text-right"
+                    onClick={() => handleSort('total_live_chat')}
+                  >
+                    Live Chat
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 text-right"
+                    onClick={() => handleSort('total_walk_ins')}
+                  >
+                    Walk-Ins
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 text-right"
+                    onClick={() => handleSort('total_issues')}
+                  >
+                    Total Issues
+                  </TableHead>
                 </TableRow>
-              ) : (
-                filteredAndSortedData.map((agent) => (
-                  <TableRow key={agent.agent_id}>
-                    <TableCell>{getRankBadge(agent.performance_rank)}</TableCell>
-                    <TableCell className="font-medium">{agent.agent_name}</TableCell>
-                    <TableCell className="text-right">{agent.total_calls.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.total_emails.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.total_live_chat.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.total_escalations.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.total_qa_assessments.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.avg_customer_satisfaction.toFixed(1)}%</TableCell>
-                    <TableCell>{getEfficiencyBadge(agent.efficiency_score)}</TableCell>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No agent performance data available
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                ) : (
+                  filteredAndSortedData.map((agent) => (
+                    <TableRow key={agent.agent_id}>
+                      <TableCell>{getRankBadge(agent.performance_rank)}</TableCell>
+                      <TableCell className="font-medium">{agent.agent_name}</TableCell>
+                      <TableCell>{agent.team_name}</TableCell>
+                      <TableCell className="text-right">{agent.total_calls.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{agent.total_emails.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{agent.total_live_chat.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{agent.total_walk_ins.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-semibold">{agent.total_issues.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 };
