@@ -45,7 +45,7 @@ export const useAgentPerformance = ({
         {
           event: '*',
           schema: 'public',
-          table: 'agent_performance_metrics'
+          table: 'csr_daily'
         },
         () => {
           fetchAgentPerformance();
@@ -63,18 +63,75 @@ export const useAgentPerformance = ({
       setLoading(true);
       setError(null);
 
-      // Call the database function for agent performance rankings
-      const { data: performanceData, error: performanceError } = await supabase
-        .rpc('get_agent_performance_rankings', {
-          team_lead_id_param: teamLeadId || null,
-          start_date_param: startDate || null,
-          end_date_param: endDate || null,
-          limit_count: limit,
-        });
+      // Fetch from csr_daily table and aggregate by agent
+      let query = supabase
+        .from('csr_daily')
+        .select('*');
 
-      if (performanceError) throw performanceError;
+      // Apply date filters if provided
+      if (startDate) {
+        query = query.gte('Date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('Date', endDate);
+      }
 
-      setData(performanceData || []);
+      const { data: dailyData, error: dailyError } = await query;
+
+      if (dailyError) throw dailyError;
+
+      // Aggregate data by agent
+      const agentMap = new Map<string, AgentPerformance>();
+      
+      dailyData?.forEach((record) => {
+        const agentId = record.agentid || '';
+        const agentName = record.Agent || 'Unknown';
+        
+        if (!agentMap.has(agentId)) {
+          agentMap.set(agentId, {
+            agent_id: agentId,
+            agent_name: agentName,
+            team_lead_id: '', // Will be set if needed
+            total_calls: 0,
+            total_emails: 0,
+            total_live_chat: 0,
+            total_escalations: 0,
+            total_qa_assessments: 0,
+            total_walk_ins: 0,
+            avg_customer_satisfaction: 0,
+            efficiency_score: 0,
+            performance_rank: 0,
+          });
+        }
+
+        const agent = agentMap.get(agentId)!;
+        agent.total_calls += parseInt(record.Calls || '0', 10);
+        agent.total_live_chat += parseInt(record['Live Chat'] || '0', 10);
+        agent.total_emails += parseInt(record['Support/DNS Emails'] || '0', 10);
+        agent.total_walk_ins += parseInt(record['Walk-Ins'] || '0', 10);
+      });
+
+      // Convert map to array and calculate efficiency scores
+      let performanceData = Array.from(agentMap.values()).map((agent) => {
+        const totalInteractions = agent.total_calls + agent.total_live_chat + agent.total_emails;
+        agent.efficiency_score = totalInteractions > 0 
+          ? ((agent.total_calls + agent.total_live_chat + agent.total_emails - agent.total_escalations) / totalInteractions)
+          : 0;
+        return agent;
+      });
+
+      // Sort by efficiency score and assign ranks
+      performanceData.sort((a, b) => b.efficiency_score - a.efficiency_score);
+      performanceData.forEach((agent, index) => {
+        agent.performance_rank = index + 1;
+      });
+
+      // Apply limit
+      if (limit) {
+        performanceData = performanceData.slice(0, limit);
+      }
+
+      setData(performanceData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch agent performance';
       setError(err instanceof Error ? err : new Error(errorMessage));
