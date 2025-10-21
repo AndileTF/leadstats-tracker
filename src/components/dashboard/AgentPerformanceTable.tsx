@@ -10,7 +10,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, TrendingUp, TrendingDown, Award } from 'lucide-react';
+import { Search, Award } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AgentPerformance } from '@/hooks/useAgentPerformance';
 
 interface AgentPerformanceTableProps {
@@ -67,12 +68,26 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
     return <Badge variant="outline">{rank}th</Badge>;
   };
 
-  const getEfficiencyBadge = (score: number) => {
-    if (score >= 0.8) return <Badge className="bg-green-600 flex items-center gap-1"><TrendingUp className="h-3 w-3" />Excellent</Badge>;
-    if (score >= 0.6) return <Badge className="bg-blue-600">Good</Badge>;
-    if (score >= 0.4) return <Badge className="bg-yellow-600">Average</Badge>;
-    return <Badge className="bg-red-600 flex items-center gap-1"><TrendingDown className="h-3 w-3" />Needs Improvement</Badge>;
-  };
+  const chartData = useMemo(() => {
+    // Group agents by team and sum their total issues
+    const teamMap = new Map<string, { team: string; totalIssues: number; agents: string[] }>();
+    
+    filteredAndSortedData.forEach((agent) => {
+      const teamName = agent.team_name || 'Unknown Team';
+      if (!teamMap.has(teamName)) {
+        teamMap.set(teamName, { team: teamName, totalIssues: 0, agents: [] });
+      }
+      const teamData = teamMap.get(teamName)!;
+      teamData.totalIssues += agent.total_issues;
+      teamData.agents.push(agent.agent_name);
+    });
+
+    return Array.from(teamMap.values()).map(team => ({
+      name: team.team,
+      issues: team.totalIssues,
+      agentCount: team.agents.length,
+    }));
+  }, [filteredAndSortedData]);
 
   if (loading) {
     return (
@@ -95,6 +110,20 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Total Issues by Team</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="issues" fill="hsl(var(--primary))" name="Total Issues" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
         <div className="mb-4 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -122,6 +151,12 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
                   Agent Name
                 </TableHead>
                 <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('team_name')}
+                >
+                  Team
+                </TableHead>
+                <TableHead 
                   className="cursor-pointer hover:bg-muted/50 text-right"
                   onClick={() => handleSort('total_calls')}
                 >
@@ -141,34 +176,22 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_escalations')}
+                  onClick={() => handleSort('total_walk_ins')}
                 >
-                  Escalations
+                  Walk-Ins
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('total_qa_assessments')}
+                  onClick={() => handleSort('total_issues')}
                 >
-                  QA Assessments
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 text-right"
-                  onClick={() => handleSort('avg_customer_satisfaction')}
-                >
-                  Satisfaction
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('efficiency_score')}
-                >
-                  Efficiency
+                  Total Issues
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAndSortedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No agent performance data available
                   </TableCell>
                 </TableRow>
@@ -177,13 +200,12 @@ export const AgentPerformanceTable = ({ data, loading }: AgentPerformanceTablePr
                   <TableRow key={agent.agent_id}>
                     <TableCell>{getRankBadge(agent.performance_rank)}</TableCell>
                     <TableCell className="font-medium">{agent.agent_name}</TableCell>
+                    <TableCell>{agent.team_name}</TableCell>
                     <TableCell className="text-right">{agent.total_calls.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{agent.total_emails.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{agent.total_live_chat.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.total_escalations.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.total_qa_assessments.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{agent.avg_customer_satisfaction.toFixed(1)}%</TableCell>
-                    <TableCell>{getEfficiencyBadge(agent.efficiency_score)}</TableCell>
+                    <TableCell className="text-right">{agent.total_walk_ins.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-semibold">{agent.total_issues.toLocaleString()}</TableCell>
                   </TableRow>
                 ))
               )}

@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useUser } from "@/hooks/useUser";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { 
   LogOut, 
@@ -10,7 +11,9 @@ import {
   Shield,
   Database,
   Bug,
-  Users
+  Users,
+  Home,
+  BarChart3
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,6 +28,7 @@ import {
 export const NavBar = () => {
   const { user, signOut } = useAuth();
   const { profile, isAdmin } = useUser();
+  const { hasAnyRole } = usePermissions();
 
   return (
     <header className="bg-card/80 backdrop-blur-md border-b border-white/10 shadow-lg px-6 py-4">
@@ -36,6 +40,31 @@ export const NavBar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              <Button variant="ghost" asChild>
+                <Link to="/" className="text-sm flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span className="hidden md:inline">Home</span>
+                </Link>
+              </Button>
+
+              {hasAnyRole(['team_lead']) && (
+                <Button variant="ghost" asChild>
+                  <Link to="/my-team" className="text-sm flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden md:inline">My Team</span>
+                  </Link>
+                </Button>
+              )}
+
+              {isAdmin && (
+                <Button variant="ghost" asChild>
+                  <Link to="/team-lead-dashboard" className="text-sm flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden md:inline">Management</span>
+                  </Link>
+                </Button>
+              )}
+
               <Button variant="ghost" asChild>
                 <Link to="/profile" className="text-sm flex items-center gap-2">
                   <User className="h-4 w-4" />

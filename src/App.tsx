@@ -16,6 +16,7 @@ import { IdleWarningDialog } from "./components/auth/IdleWarningDialog";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import TeamLeadDashboard from "./pages/team-lead-dashboard/TeamLeadDashboard";
+import TeamLeadPortal from "./pages/team-lead/TeamLeadPortal";
 import UserManagement from "./pages/admin/UserManagement";
 import DebugDashboard from "./pages/admin/DebugDashboard";
 import ServiceNowSettings from "./pages/admin/ServiceNowSettings";
@@ -86,11 +87,24 @@ const AppContent = () => {
                   } 
                 />
                 
-                {/* Team Lead Dashboard Route - Accessible by editors and admins */}
+                {/* Team Lead Portal - For team leads only */}
+                <Route 
+                  path="/my-team" 
+                  element={
+                    <ProtectedRoute editorOrAdmin={true}>
+                      <>
+                        <NavBar />
+                        <TeamLeadPortal />
+                      </>
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Management Dashboard Route - Accessible by admins only */}
                 <Route 
                   path="/team-lead-dashboard" 
                   element={
-                    <ProtectedRoute editorOrAdmin={true}>
+                    <ProtectedRoute adminOnly={true}>
                       <>
                         <NavBar />
                         <TeamLeadDashboard />

@@ -6,14 +6,14 @@ export interface AgentPerformance {
   agent_id: string;
   agent_name: string;
   team_lead_id: string;
+  team_name: string;
   total_calls: number;
   total_emails: number;
   total_live_chat: number;
   total_escalations: number;
   total_qa_assessments: number;
   total_walk_ins: number;
-  avg_customer_satisfaction: number;
-  efficiency_score: number;
+  total_issues: number;
   performance_rank: number;
 }
 
@@ -63,7 +63,30 @@ export const useAgentPerformance = ({
       setLoading(true);
       setError(null);
 
-      // Fetch from csr_daily table and aggregate by agent
+      // First, get agents with their team lead info
+      let agentsQuery = supabase
+        .from('agents')
+        .select('id, name, team_lead_id, team_leads(name)');
+
+      // Filter by team lead if provided
+      if (teamLeadId) {
+        agentsQuery = agentsQuery.eq('team_lead_id', teamLeadId);
+      }
+
+      const { data: agentsData, error: agentsError } = await agentsQuery;
+      if (agentsError) throw agentsError;
+
+      // Create a map of agent names to their IDs and team info
+      const agentNameMap = new Map<string, { id: string; teamLeadId: string; teamName: string }>();
+      agentsData?.forEach((agent: any) => {
+        agentNameMap.set(agent.name, {
+          id: agent.id,
+          teamLeadId: agent.team_lead_id,
+          teamName: agent.team_leads?.name || 'Unknown Team',
+        });
+      });
+
+      // Fetch from csr_daily table
       let query = supabase
         .from('csr_daily')
         .select('*');
@@ -77,51 +100,54 @@ export const useAgentPerformance = ({
       }
 
       const { data: dailyData, error: dailyError } = await query;
-
       if (dailyError) throw dailyError;
 
       // Aggregate data by agent
       const agentMap = new Map<string, AgentPerformance>();
       
       dailyData?.forEach((record) => {
-        const agentId = record.agentid || '';
         const agentName = record.Agent || 'Unknown';
+        const agentInfo = agentNameMap.get(agentName);
         
-        if (!agentMap.has(agentId)) {
-          agentMap.set(agentId, {
-            agent_id: agentId,
+        // Skip if agent not in our filtered list
+        if (!agentInfo) return;
+        
+        if (!agentMap.has(agentInfo.id)) {
+          agentMap.set(agentInfo.id, {
+            agent_id: agentInfo.id,
             agent_name: agentName,
-            team_lead_id: '', // Will be set if needed
+            team_lead_id: agentInfo.teamLeadId,
+            team_name: agentInfo.teamName,
             total_calls: 0,
             total_emails: 0,
             total_live_chat: 0,
             total_escalations: 0,
             total_qa_assessments: 0,
             total_walk_ins: 0,
-            avg_customer_satisfaction: 0,
-            efficiency_score: 0,
+            total_issues: 0,
             performance_rank: 0,
           });
         }
 
-        const agent = agentMap.get(agentId)!;
+        const agent = agentMap.get(agentInfo.id)!;
         agent.total_calls += parseInt(record.Calls || '0', 10);
         agent.total_live_chat += parseInt(record['Live Chat'] || '0', 10);
         agent.total_emails += parseInt(record['Support/DNS Emails'] || '0', 10);
         agent.total_walk_ins += parseInt(record['Walk-Ins'] || '0', 10);
+        
+        // Calculate total issues (emails + social + billing + sales tickets)
+        const supportEmails = parseInt(record['Support/DNS Emails'] || '0', 10);
+        const socialTickets = parseInt(record['Social Tickets'] || '0', 10);
+        const billingTickets = parseInt(record['Billing Tickets'] || '0', 10);
+        const salesTickets = parseInt(record['Sales Tickets'] || '0', 10);
+        agent.total_issues += supportEmails + socialTickets + billingTickets + salesTickets;
       });
 
-      // Convert map to array and calculate efficiency scores
-      let performanceData = Array.from(agentMap.values()).map((agent) => {
-        const totalInteractions = agent.total_calls + agent.total_live_chat + agent.total_emails;
-        agent.efficiency_score = totalInteractions > 0 
-          ? ((agent.total_calls + agent.total_live_chat + agent.total_emails - agent.total_escalations) / totalInteractions)
-          : 0;
-        return agent;
-      });
-
-      // Sort by efficiency score and assign ranks
-      performanceData.sort((a, b) => b.efficiency_score - a.efficiency_score);
+      // Convert map to array and sort by total issues
+      let performanceData = Array.from(agentMap.values());
+      performanceData.sort((a, b) => b.total_issues - a.total_issues);
+      
+      // Assign ranks
       performanceData.forEach((agent, index) => {
         agent.performance_rank = index + 1;
       });
