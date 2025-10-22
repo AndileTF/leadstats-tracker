@@ -5,9 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Users, AlertCircle, CheckCircle, Clock, Plus } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AgentForm } from '@/components/dashboard/AgentForm';
+import type { Agent } from '@/types/teamLead';
 import { DateFilter } from '@/components/dashboard/DateFilter';
 
 interface AgentStats {
@@ -26,38 +29,64 @@ const TeamLeadPortal = () => {
   const [teamLeadId, setTeamLeadId] = useState<string | null>(null);
   const [agentStats, setAgentStats] = useState<AgentStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddAgent, setShowAddAgent] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>([]);
 
-  // Fetch team lead info
+  // Fetch team lead info - find team lead record by matching email/name with profile
   useEffect(() => {
     const fetchTeamLeadInfo = async () => {
       if (!user) return;
 
       try {
+        // Get the user's profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('team_lead_id')
+          .select('email, full_name, team_lead_id')
           .eq('id', user.id)
           .maybeSingle();
 
         if (profileError) throw profileError;
 
-        if (!profile?.team_lead_id) {
+        // Find the team lead record that matches this user
+        // First try by team_lead_id if it exists in profile
+        let teamLead = null;
+        
+        if (profile?.team_lead_id) {
+          const { data, error } = await supabase
+            .from('team_leads')
+            .select('*')
+            .eq('id', profile.team_lead_id)
+            .maybeSingle();
+          
+          if (!error && data) {
+            teamLead = data;
+          }
+        }
+
+        // If not found by team_lead_id, try to match by email or name
+        if (!teamLead && profile) {
+          const { data, error } = await supabase
+            .from('team_leads')
+            .select('*');
+          
+          if (!error && data) {
+            // Try to find a match by comparing names or email
+            teamLead = data.find(tl => 
+              profile.email?.toLowerCase().includes(tl.name.toLowerCase().split(' ')[0]) ||
+              tl.name.toLowerCase().includes(profile.email?.split('@')[0].toLowerCase() || '')
+            );
+          }
+        }
+
+        if (!teamLead) {
           toast({
-            title: "Profile Not Linked",
-            description: "Your profile is not linked to a team lead. Please contact an administrator.",
+            title: "Team Lead Not Found",
+            description: "Your account is not associated with a team lead profile. Please contact an administrator.",
             variant: "destructive",
           });
           setIsLoading(false);
           return;
         }
-
-        const { data: teamLead, error: teamLeadError } = await supabase
-          .from('team_leads')
-          .select('*')
-          .eq('id', profile.team_lead_id)
-          .single();
-
-        if (teamLeadError) throw teamLeadError;
 
         setTeamLeadId(teamLead.id);
         setTeamLeadName(teamLead.name);
@@ -85,12 +114,14 @@ const TeamLeadPortal = () => {
         setIsLoading(true);
 
         // Get all agents for this team lead
-        const { data: agents, error: agentsError } = await supabase
+        const { data: agentsList, error: agentsError } = await supabase
           .from('agents')
-          .select('id, name')
+          .select('*')
           .eq('team_lead_id', teamLeadId);
 
         if (agentsError) throw agentsError;
+        
+        setAgents(agentsList || []);
 
         // Fetch csr_daily data for these agents
         let query = supabase
@@ -108,7 +139,7 @@ const TeamLeadPortal = () => {
         if (dailyError) throw dailyError;
 
         // Create agent name map
-        const agentNameMap = new Map(agents?.map(a => [a.name, a.id]) || []);
+        const agentNameMap = new Map(agentsList?.map(a => [a.name, a.id]) || []);
 
         // Aggregate stats by agent
         const statsMap = new Map<string, AgentStats>();
@@ -239,8 +270,28 @@ const TeamLeadPortal = () => {
             <h1 className="text-3xl font-bold">My Team Dashboard</h1>
             <p className="text-muted-foreground mt-2">Welcome, {teamLeadName}</p>
           </div>
-          <DateFilter />
+          <div className="flex items-center gap-4">
+            <Button onClick={() => setShowAddAgent(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Agent
+            </Button>
+            <DateFilter />
+          </div>
         </div>
+
+        {/* Add Agent Form */}
+        {teamLeadId && (
+          <AgentForm
+            isOpen={showAddAgent}
+            teamLeadId={teamLeadId}
+            onClose={() => setShowAddAgent(false)}
+            onSuccess={() => {
+              setShowAddAgent(false);
+              // Refetch data
+              window.location.reload();
+            }}
+          />
+        )}
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
